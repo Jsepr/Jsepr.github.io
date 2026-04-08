@@ -1,1 +1,612 @@
-Hello World
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jsepr - Developer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #3B82F6;
+      --primary-dark: #2563EB;
+      --secondary: #8B5CF6;
+      --accent: #EC4899;
+      --dark: #0F172A;
+      --darker: #020617;
+      --light: #F8FAFC;
+      --gray: #94A3B8;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--darker);
+      color: var(--light);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gradient-border {
+      position: relative;
+      background: var(--dark);
+      border-radius: 16px;
+    }
+
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 17px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+      z-index: -1;
+    }
+
+    header {
+      padding: 24px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(2, 6, 23, 0.8);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    nav {
+      display: flex;
+      gap: 32px;
+    }
+
+    nav a {
+      color: var(--gray);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--light);
+    }
+
+    .github-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--dark);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .github-link:hover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    section {
+      padding: 120px 0 80px;
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: 80px;
+    }
+
+    .hero h1 {
+      font-size: clamp(48px, 10vw, 80px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: var(--gray);
+      max-width: 500px;
+      margin-bottom: 40px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--dark);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: var(--light);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 48px;
+      letter-spacing: -1px;
+    }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .skill-card {
+      background: var(--dark);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      transition: all 0.3s;
+    }
+
+    .skill-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+    }
+
+    .skill-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    .skill-card:nth-child(1) .skill-icon { background: rgba(59, 130, 246, 0.2); }
+    .skill-card:nth-child(2) .skill-icon { background: rgba(139, 92, 246, 0.2); }
+    .skill-card:nth-child(3) .skill-icon { background: rgba(16, 185, 129, 0.2); }
+    .skill-card:nth-child(4) .skill-icon { background: rgba(249, 115, 22, 0.2); }
+    .skill-card:nth-child(5) .skill-icon { background: rgba(236, 72, 153, 0.2); }
+    .skill-card:nth-child(6) .skill-icon { background: rgba(59, 130, 246, 0.2); }
+
+    .skill-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .skill-card p {
+      font-size: 14px;
+      color: var(--gray);
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 32px;
+    }
+
+    .project-card {
+      background: var(--dark);
+      border-radius: 20px;
+      padding: 32px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .project-card:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      transform: translateY(-4px);
+    }
+
+    .project-card:hover::before {
+      opacity: 1;
+    }
+
+    .project-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .project-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .project-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .project-link {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--gray);
+      transition: all 0.2s;
+    }
+
+    .project-link:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .project-card h3 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .project-card p {
+      font-size: 15px;
+      color: var(--gray);
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+
+    .project-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--primary);
+    }
+
+    footer {
+      padding: 80px 0;
+      text-align: center;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    footer h2 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    footer p {
+      color: var(--gray);
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 16px 24px;
+      }
+
+      nav {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: 40px;
+      }
+
+      .hero p {
+        font-size: 18px;
+      }
+
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+
+      section {
+        padding: 80px 0 60px;
+      }
+    }
+
+    .floating-shapes {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
+    }
+
+    .shape-1 {
+      width: 600px;
+      height: 600px;
+      background: var(--primary);
+      top: -200px;
+      right: -200px;
+    }
+
+    .shape-2 {
+      width: 400px;
+      height: 400px;
+      background: var(--secondary);
+      bottom: 20%;
+      left: -100px;
+    }
+
+    .shape-3 {
+      width: 300px;
+      height: 300px;
+      background: var(--accent);
+      bottom: -100px;
+      right: 20%;
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <header>
+    <div class="logo gradient-text">jsepr</div>
+    <nav>
+      <a href="#skills">Skills</a>
+      <a href="#projects">Projects</a>
+    </nav>
+    <a href="https://github.com/jsepr" target="_blank" class="github-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+      </svg>
+      GitHub
+    </a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Hi, I'm <span class="gradient-text">jsepr</span></h1>
+      <p>Software developer building web applications with modern technologies. Focused on creating clean, user-friendly experiences.</p>
+      <div class="hero-cta">
+        <a href="#projects" class="btn btn-primary">
+          View Projects
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7 17L17 7M17 7H7M17 7V17"/>
+          </svg>
+        </a>
+        <a href="https://github.com/jsepr" target="_blank" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          Follow on GitHub
+        </a>
+      </div>
+    </section>
+
+    <section id="skills">
+      <div class="section-label">What I work with</div>
+      <h2 class="section-title">Skills & Technologies</h2>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <div class="skill-icon">JS</div>
+          <h3>TypeScript / JavaScript</h3>
+          <p>Primary languages for frontend and backend development</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14.23 12.004a2.236 2.236 0 0 1-2.235 2.236 2.236 2.236 0 0 1-2.236-2.236 2.236 2.236 0 0 1 2.235-2.236 2.236 2.236 0 0 1 2.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C18.02 15.096 20 13.59 20 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44a23.476 23.476 0 0 0-3.107-.534A23.892 23.892 0 0 0 8.67 4.71c.282-.02.55-.034.81-.034.26 0 .493.014.728.034a23.476 23.476 0 0 0 3.107.534c-.108-.495-.196-.97-.25-1.44-.225-1.868.064-3.322.73-3.704.152-.083.333-.127.558-.127zm-6.27 6.885c-.853 0-1.445.088-1.445.588 0 .494.9.588 1.445.588.547 0 1.452-.094 1.452-.588 0-.5-.905-.588-1.452-.588zm9.77 0c-.852 0-1.444.088-1.444.588 0 .494.9.588 1.444.588.548 0 1.452-.094 1.452-.588 0-.5-.904-.588-1.452-.588z"/>
+            </svg>
+          </div>
+          <h3>React</h3>
+          <p>Building interactive user interfaces and single-page applications</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3>Node.js</h3>
+          <p>Server-side JavaScript runtime for APIs and backend services</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.177 17.932l-3.35-1.942 3.35 1.942zm1.177 1.068l-.726-.421 3.35-1.942 3.35 1.942-.727.421h-5.246zm-.004-4.604l-3.35 1.942 3.35 1.942.726-.421h5.246l.727-.421-3.35-1.942h-5.246zm.004-4.604l-3.35 1.942 3.35 1.942.726-.421h5.246l.727-.421-3.35-1.942h-5.246zm.004-4.604l-3.35 1.942 3.35 1.942.726-.421h5.246l.727-.421-3.35-1.942h-5.246z"/>
+            </svg>
+          </div>
+          <h3>Python</h3>
+          <p>Scripting, automation, and backend development</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm0 2c3.52 0 6 1.21 6 2s-2.48 2-6 2-6-1.21-6-2 2.48-2 6-2zm6 12c0 .5-2.48 2-6 2s-6-1.5-6-2v-2.23c1.55.87 3.64 1.23 6 1.23s4.45-.36 6-1.23V17zm0-5c0 .5-2.48 2-6 2s-6-1.5-6-2V9.77c1.55.87 3.64 1.23 6 1.23s4.45-.36 6-1.23V12z"/>
+            </svg>
+          </div>
+          <h3>Java</h3>
+          <p>Enterprise applications and backend systems</p>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3C7.58 3 3 4.79 3 7v10c0 2.21 4.58 4 9 4s9-1.79 9-4V7c0-2.21-4.58-4-9-4zm0 2c4.42 0 7 1.21 7 2s-2.58 2-7 2-7-1.21-7-2 2.58-2 7-2zm-7 8v4h14v-4H5zm0 6v2h14v-2H5z"/>
+            </svg>
+          </div>
+          <h3>SQL</h3>
+          <p>Database design, queries, and optimization</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="projects">
+      <div class="section-label">Featured Work</div>
+      <h2 class="section-title">Projects</h2>
+      <div class="projects-grid">
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">🍳</div>
+            <div class="project-links">
+              <a href="https://aptit.jsepr.se" target="_blank" class="project-link" title="View Demo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                </svg>
+              </a>
+              <a href="https://github.com/Jsepr/aptit" target="_blank" class="project-link" title="View Code">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+          <h3>Aptit</h3>
+          <p>Smart recipe book with AI-powered extraction that removes blog fluff and family history from any recipe URL. Converts measurements between metric and imperial units.</p>
+          <div class="project-tags">
+            <span class="tag">TanStack Start</span>
+            <span class="tag">Tailwind CSS</span>
+            <span class="tag">Google Gemini</span>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">🎬</div>
+            <div class="project-links">
+              <a href="https://moviely.app" target="_blank" class="project-link" title="View Demo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+          <h3>Moviely</h3>
+          <p>Daily movie guessing game where players identify films using curated hints. Features challenge mode for private games with friends.</p>
+          <div class="project-tags">
+            <span class="tag">Vite + React</span>
+            <span class="tag">TypeScript</span>
+            <span class="tag">Firebase</span>
+            <span class="tag">TMDB API</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <h2>Let's connect</h2>
+      <p>Interested in working together? Check out my GitHub or reach out.</p>
+      <div class="hero-cta" style="justify-content: center;">
+        <a href="https://github.com/jsepr" target="_blank" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub Profile
+        </a>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>
