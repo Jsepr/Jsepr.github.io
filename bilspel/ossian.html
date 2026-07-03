@@ -378,10 +378,10 @@
   /* ---------- Blixten the dalmatian ---------- */
   #blixten {
     position: absolute;
-    left: 5%;
-    bottom: 34vh;
-    width: 22vh;
-    height: 26vh;
+    right: 12%;
+    bottom: 27vh;
+    width: 20vh;
+    height: 24vh;
     z-index: 9;
     cursor: pointer;
     transition: transform .2s;
@@ -405,8 +405,8 @@
   #blixten img { filter: drop-shadow(0 4px 4px rgba(0,0,0,.3)); }
   #woof {
     position: absolute;
-    left: 20%;
-    bottom: 52vh;
+    right: 16%;
+    bottom: 44vh;
     background: #fff;
     color: #222;
     font-weight: 800;
@@ -433,18 +433,18 @@
   /* ---------- Flash the fire truck ---------- */
   #flash {
     position: absolute;
-    left: 50%;
-    bottom: 39vh;
-    width: 24vh;
-    height: 17vh;
-    transform: translateX(-38%);
-    z-index: 4;
+    left: 6%;
+    bottom: 34.5vh;
+    width: 14vh;
+    height: 10vh;
+    z-index: 11;
     cursor: pointer;
     animation: truckbob 1.6s ease-in-out infinite;
+    filter: drop-shadow(0 1.2vh 4px rgba(0,0,0,.35));
   }
   @keyframes truckbob {
-    0%, 100% { transform: translateX(-38%) translateY(0); }
-    50% { transform: translateX(-38%) translateY(-.8vh); }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-.5vh); }
   }
   #flash img {
     width: 100%;
