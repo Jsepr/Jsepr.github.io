@@ -164,6 +164,17 @@
     font-variant-numeric: tabular-nums;
   }
   #battRow b { color: var(--text); font-weight: 500; }
+  #fineRow {
+    display: none;
+    width: 100%;
+    justify-content: space-between;
+    font-size: 1.5vh;
+    color: #c96b5f;
+    letter-spacing: .06em;
+    font-variant-numeric: tabular-nums;
+  }
+  #fineRow.show { display: flex; }
+  #fineRow b { font-weight: 600; }
   #chargeBtn {
     border: 1px solid var(--line);
     background: transparent;
@@ -498,6 +509,7 @@
         <div id="battWrap">
           <div id="battBar"><div id="battFill"></div></div>
           <div id="battRow"><span><b id="battPct">100</b>%</span><span><b id="rangeKm">480</b> km</span></div>
+          <div id="fineRow">Böter: <b id="fineSum">0</b> kr</div>
         </div>
       </div>
       <button id="chargeBtn">⚡ Ladda</button>
@@ -572,6 +584,7 @@ const S = {
   charging: false,
   battery: 100,       // percent
   speedLimit: 70,
+  fines: 0,
   distance: 0,
   curve: 0,
   targetCurve: 0,
@@ -907,6 +920,8 @@ for (let i = 0; i < 4; i++) {
 const LIMITS = [30, 50, 70, 90, 110, 120];
 let limitIdx = 3;
 const signs = [{ z: 0.35, limit: 90 }, { z: 0.85, limit: 110 }];
+const cameras = [{ z: 0.6 }];
+let cameraFlash = 0;
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 function mixColor(day, night, t) {
@@ -1029,7 +1044,7 @@ function drawWorld(dt, now) {
     if (tr.z < 0) { tr.z += 1; tr.side = Math.random() < 0.5 ? -1 : 1; }
     if (tr.z > 1) { tr.z -= 1; }
     const t = 1 - tr.z;
-    const i = Math.min(segs, Math.round(lerp(segs, 0, tr.z)));
+    const i = Math.min(segs, Math.round(lerp(0, segs, tr.z)));
     const p = pts[i];
     const px = p.x + tr.side * (p.w / 2 + lerp(10, 140, t));
     const py = p.y;
@@ -1047,11 +1062,35 @@ function drawWorld(dt, now) {
     }
     if (sg.z > 1) sg.z -= 1;
     const t = 1 - sg.z;
-    const i = Math.min(segs, Math.round(lerp(segs, 0, sg.z)));
+    const i = Math.min(segs, Math.round(lerp(0, segs, sg.z)));
     const p = pts[i];
     const px = p.x + p.w / 2 + lerp(8, 90, t);
     const s = lerp(0.12, 1.5, Math.pow(t, 1.6));
     drawSign(px, p.y, s, sg.limit);
+  });
+
+  // fartkameror
+  cameras.forEach(cam => {
+    const prevZ = cam.z;
+    cam.z -= dt * S.speed * 0.004 * (S.gear === "R" ? -1 : 1);
+    if (cam.z < 0) {
+      if (prevZ >= 0 && S.speed > S.speedLimit + 5) {
+        const over = S.speed - S.speedLimit;
+        S.fines += over > 25 ? 4000 : 2400;
+        cameraFlash = 0.35;
+        beep(2400, 0.05, "square", 0.12);
+        beep(1800, 0.08, "square", 0.08, 0.05);
+      }
+      cam.z += 1.4;
+    }
+    if (cam.z > 1.4) cam.z -= 1.4;
+    if (cam.z > 1) return;
+    const t = 1 - cam.z;
+    const i = Math.min(segs, Math.round(lerp(0, segs, cam.z)));
+    const p = pts[i];
+    const px = p.x + p.w / 2 + lerp(8, 70, t);
+    const s = lerp(0.12, 1.5, Math.pow(t, 1.6));
+    drawCamera(px, p.y, s);
   });
 
   if (S.lights) {
@@ -1108,6 +1147,33 @@ function drawWorld(dt, now) {
       cx.stroke();
     }
   }
+
+  if (cameraFlash > 0) {
+    cameraFlash -= dt;
+    cx.fillStyle = `rgba(255,255,255,${Math.max(0, cameraFlash / 0.35) * 0.85})`;
+    cx.fillRect(0, 0, W, H);
+  }
+}
+
+function drawCamera(x, y, s) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s, s);
+  cx.fillStyle = mixColor("#5e6b78", "#2a323c", nightT);
+  cx.fillRect(-4, -78, 8, 78);
+  cx.beginPath();
+  cx.roundRect(-13, -112, 26, 40, 8);
+  cx.fillStyle = mixColor("#33414e", "#161d24", nightT);
+  cx.fill();
+  cx.beginPath();
+  cx.arc(0, -98, 7, 0, 7);
+  cx.fillStyle = "#0a0c0e";
+  cx.fill();
+  cx.beginPath();
+  cx.arc(-2.5, -100.5, 2.5, 0, 7);
+  cx.fillStyle = "#8fb4d4";
+  cx.fill();
+  cx.restore();
 }
 
 function drawSign(x, y, s, limit) {
@@ -1201,6 +1267,8 @@ function loop(now) {
   speedNum.textContent = Math.round(S.speed);
   speedNum.classList.toggle("over", S.speed > S.speedLimit + 3);
   limitSign.textContent = S.speedLimit;
+  fineRow.classList.toggle("show", S.fines > 0);
+  fineSum.textContent = S.fines.toLocaleString("sv-SE");
   battFill.style.width = S.battery + "%";
   battFill.style.background = S.battery < 15 ? "#c96b5f" : "var(--gold)";
   battPct.textContent = Math.round(S.battery);

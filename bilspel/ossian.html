@@ -806,10 +806,17 @@ flash.addEventListener("pointerdown", () => {
 });
 
 /* ============ horn ============ */
+function honkBack() {
+  beep(392, 0.3, "square", 0.12);
+  beep(494, 0.3, "square", 0.12);
+}
 document.getElementById("horn").addEventListener("pointerdown", e => {
   e.stopPropagation();
   hornSound();
   setTimeout(blixtenBark, 550);
+  if (typeof traffic !== "undefined" && traffic.some(c => c.z > 0 && c.z < 0.7)) {
+    setTimeout(honkBack, 500);
+  }
 });
 
 /* ============ toggle buttons ============ */
@@ -972,6 +979,13 @@ const LIMITS = [30, 50, 70, 90, 110];
 let limitIdx = 1;
 const signs = [{ z: 0.35, limit: 50 }, { z: 0.85, limit: 70 }];
 
+const CAR_COLORS = ["#e0342b", "#1976d2", "#f5a623", "#7b52ab", "#1caf3c", "#f2f2f2"];
+const traffic = [
+  { z: 0.5, color: CAR_COLORS[0], truck: false },
+  { z: 1.1, color: CAR_COLORS[1], truck: true },
+];
+const moose = { active: false, next: 8000, prog: 0, dir: 1, z: 0.42 };
+
 function lerp(a, b, t) { return a + (b - a) * t; }
 
 function mixColor(day, night, t) {
@@ -1101,13 +1115,54 @@ function drawWorld(dt, now) {
     if (tr.z < 0) { tr.z += 1; tr.side = Math.random() < 0.5 ? -1 : 1; tr.kind = Math.floor(Math.random() * 3); }
     if (tr.z > 1) { tr.z -= 1; }
     const t = 1 - tr.z; // 0 at horizon → 1 near
-    const i = Math.min(segs, Math.round(lerp(segs, 0, tr.z)));
+    const i = Math.min(segs, Math.round(lerp(0, segs, tr.z)));
     const p = pts[i];
     const px = p.x + tr.side * (p.w / 2 + lerp(10, 130, t));
     const py = p.y;
     const s = lerp(0.1, 1.4, Math.pow(t, 1.6));
     drawThing(px, py, s, tr.kind, now);
   });
+
+  // oncoming traffic (left lane)
+  traffic.forEach(car => {
+    car.z -= dt * 0.004 * (S.speed * (S.gear === "R" ? -1 : 1) + 55);
+    if (car.z < -0.05) {
+      car.z = 1.05 + Math.random() * 0.6;
+      car.color = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
+      car.truck = Math.random() < 0.25;
+    }
+    if (car.z > 1.7) car.z = 1.05;
+    if (car.z > 1) return;
+    const t = 1 - car.z;
+    const i = Math.max(0, Math.min(segs, Math.round(lerp(0, segs, car.z))));
+    const p = pts[i];
+    const s = lerp(0.1, 1.6, Math.pow(t, 1.6));
+    drawCar(p.x - p.w * 0.25, p.y, s, car.color, car.truck);
+  });
+
+  // the moose!
+  if (!moose.active && now > moose.next) {
+    moose.active = true;
+    moose.prog = 0;
+    moose.dir = Math.random() < 0.5 ? 1 : -1;
+    if (typeof blixtenBark === "function") blixtenBark();
+  }
+  if (moose.active) {
+    moose.prog += dt / 4.5;
+    if (moose.prog >= 1) {
+      moose.active = false;
+      moose.next = now + 15000 + Math.random() * 20000;
+    } else {
+      const i = Math.min(segs, Math.round(lerp(0, segs, moose.z)));
+      const p = pts[i];
+      const t = 1 - moose.z;
+      const ms = lerp(0.1, 1.6, Math.pow(t, 1.6));
+      const span = p.w + 260 * ms;
+      const x0 = p.x - span / 2, x1 = p.x + span / 2;
+      const mx = moose.dir === 1 ? lerp(x0, x1, moose.prog) : lerp(x1, x0, moose.prog);
+      drawMoose(mx, p.y, ms, moose.dir, now);
+    }
+  }
 
   // speed limit signs (right side, Swedish style)
   signs.forEach(sg => {
@@ -1119,7 +1174,7 @@ function drawWorld(dt, now) {
     }
     if (sg.z > 1) sg.z -= 1;
     const t = 1 - sg.z;
-    const i = Math.min(segs, Math.round(lerp(segs, 0, sg.z)));
+    const i = Math.min(segs, Math.round(lerp(0, segs, sg.z)));
     const p = pts[i];
     const px = p.x + p.w / 2 + lerp(8, 90, t);
     const s = lerp(0.12, 1.5, Math.pow(t, 1.6));
@@ -1185,6 +1240,85 @@ function drawWorld(dt, now) {
       cx.stroke();
     }
   }
+}
+
+function drawCar(x, y, s, color, truck) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s, s);
+  const w = truck ? 72 : 56, h = truck ? 66 : 44;
+  cx.fillStyle = color;
+  cx.beginPath();
+  cx.roundRect(-w / 2, -h, w, h - 6, 10);
+  cx.fill();
+  cx.fillStyle = mixColor("#bfe8ff", "#31405e", nightT);
+  cx.beginPath();
+  cx.roundRect(-w / 2 + 8, -h + 6, w - 16, truck ? 20 : 14, 6);
+  cx.fill();
+  cx.fillStyle = "#fffbe6";
+  if (nightT > 0.3) { cx.shadowColor = "#fff7c0"; cx.shadowBlur = 14; }
+  cx.beginPath();
+  cx.arc(-w / 2 + 9, -14, 5, 0, 7);
+  cx.arc(w / 2 - 9, -14, 5, 0, 7);
+  cx.fill();
+  cx.shadowBlur = 0;
+  cx.fillStyle = "#222";
+  cx.beginPath();
+  cx.roundRect(-w / 2 - 3, -12, 10, 14, 4);
+  cx.roundRect(w / 2 - 7, -12, 10, 14, 4);
+  cx.fill();
+  cx.restore();
+}
+
+function drawMoose(x, y, s, dir, now) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s * dir, s);
+  const leg = Math.sin(now / 110) * 8;
+  cx.strokeStyle = mixColor("#5e4326", "#2e2113", nightT);
+  cx.lineWidth = 9;
+  cx.lineCap = "round";
+  cx.beginPath();
+  cx.moveTo(-28, -46); cx.lineTo(-28 + leg, -4);
+  cx.moveTo(-12, -46); cx.lineTo(-12 - leg, -4);
+  cx.moveTo(14, -46); cx.lineTo(14 + leg, -4);
+  cx.moveTo(30, -46); cx.lineTo(30 - leg, -4);
+  cx.stroke();
+  const body = mixColor("#7a5a33", "#3d2d19", nightT);
+  cx.fillStyle = body;
+  cx.beginPath();
+  cx.ellipse(0, -58, 42, 22, 0, 0, 7);
+  cx.fill();
+  cx.beginPath();
+  cx.moveTo(30, -66);
+  cx.quadraticCurveTo(52, -86, 58, -84);
+  cx.quadraticCurveTo(76, -84, 78, -72);
+  cx.quadraticCurveTo(78, -62, 62, -62);
+  cx.quadraticCurveTo(48, -56, 36, -52);
+  cx.fill();
+  cx.fillStyle = mixColor("#5e4326", "#2e2113", nightT);
+  cx.beginPath();
+  cx.ellipse(74, -70, 10, 8, 0.3, 0, 7);
+  cx.fill();
+  cx.fillStyle = "#1a1a1a";
+  cx.beginPath();
+  cx.arc(58, -80, 2.8, 0, 7);
+  cx.fill();
+  cx.strokeStyle = mixColor("#c9a86a", "#6b5836", nightT);
+  cx.lineWidth = 5;
+  cx.beginPath();
+  cx.moveTo(52, -88); cx.quadraticCurveTo(40, -108, 22, -104);
+  cx.moveTo(46, -100); cx.lineTo(42, -112);
+  cx.moveTo(36, -104); cx.lineTo(32, -116);
+  cx.moveTo(56, -88); cx.quadraticCurveTo(66, -110, 84, -104);
+  cx.moveTo(66, -102); cx.lineTo(70, -114);
+  cx.moveTo(76, -104); cx.lineTo(80, -116);
+  cx.stroke();
+  cx.fillStyle = body;
+  cx.beginPath();
+  cx.ellipse(-42, -62, 6, 4, 0, 0, 7);
+  cx.fill();
+  cx.restore();
 }
 
 function drawSign(x, y, s, limit) {
