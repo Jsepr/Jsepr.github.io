@@ -1006,7 +1006,7 @@ function drawWorld(dt, now) {
     const y = bottomY - roadH * t - 30 * t;
     const w = lerp(roadBottomW, roadTopW, Math.pow(t, 1.15));
     const xoff = S.curve * Math.pow(t, 2) * W * 0.45 - S.carX * (1 - t) * W * 0.18;
-    pts.push({ y, w, x: W / 2 + xoff });
+    pts.push({ y, w, x: W / 2 - w / 4 + xoff });
   }
 
   cx.fillStyle = mixColor("#3c4046", "#1c1f24", nightT);

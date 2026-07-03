@@ -437,14 +437,14 @@
     bottom: 39vh;
     width: 24vh;
     height: 17vh;
-    transform: translateX(-58%);
+    transform: translateX(-38%);
     z-index: 4;
     cursor: pointer;
     animation: truckbob 1.6s ease-in-out infinite;
   }
   @keyframes truckbob {
-    0%, 100% { transform: translateX(-58%) translateY(0); }
-    50% { transform: translateX(-58%) translateY(-.8vh); }
+    0%, 100% { transform: translateX(-38%) translateY(0); }
+    50% { transform: translateX(-38%) translateY(-.8vh); }
   }
   #flash img {
     width: 100%;
@@ -1075,7 +1075,7 @@ function drawWorld(dt, now) {
     const y = bottomY - roadH * t - 30 * t;
     const w = lerp(roadBottomW, roadTopW, Math.pow(t, 1.15));
     const xoff = S.curve * Math.pow(t, 2) * W * 0.45 - S.carX * (1 - t) * W * 0.18;
-    pts.push({ y, w, x: W / 2 + xoff });
+    pts.push({ y, w, x: W / 2 - w / 4 + xoff });
   }
 
   cx.fillStyle = mixColor("#5b5f6b", "#33363f", nightT);
