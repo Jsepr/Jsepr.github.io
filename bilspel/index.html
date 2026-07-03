@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bilspel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Baloo 2", "Comic Sans MS", "Chalkboard SE", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  main { display: flex; width: 100vw; height: 100vh; }
+  .half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3vh;
+    text-decoration: none;
+    position: relative;
+    transition: flex .35s ease;
+  }
+  .half:hover { flex: 1.35; }
+
+  #ossian {
+    background: linear-gradient(180deg, #4fb3e8 0%, #bfe8ff 45%, #8fd964 45.2%, #7ec850 100%);
+  }
+  #ossian .card {
+    background: rgba(217,79,48,.92);
+    border: 5px solid #fff3dc;
+    border-radius: 26px;
+    padding: 4vh 5vw;
+    text-align: center;
+    box-shadow: 0 10px 0 rgba(0,0,0,.2);
+    transform: rotate(-2deg);
+    transition: transform .2s;
+  }
+  #ossian:hover .card { transform: rotate(-2deg) scale(1.05); }
+  #ossian .emoji { font-size: 9vh; display: block; }
+  #ossian h2 {
+    color: #fff;
+    font-size: 5vh;
+    font-weight: 800;
+    text-shadow: 0 3px 0 rgba(0,0,0,.3);
+    letter-spacing: .04em;
+  }
+  #ossian p { color: #ffe8c2; font-size: 2.2vh; font-weight: 700; margin-top: 1vh; }
+  #ossian .road {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 32vh;
+    background: #5b5f6b;
+    clip-path: polygon(38% 0, 62% 0, 100% 100%, 0% 100%);
+  }
+  #ossian .road::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 0; bottom: 0;
+    width: 6%;
+    transform: translateX(-50%);
+    background: repeating-linear-gradient(180deg, #ffd23f 0 14%, transparent 14% 28%);
+  }
+  #ossian .card { position: relative; z-index: 1; }
+
+  #henke {
+    background: linear-gradient(180deg, #b9c7cf 0%, #e6d9c4 40%, #10161a 40.2%, #0c0d0e 100%);
+    font-family: "Helvetica Neue", "Avenir Next", system-ui, sans-serif;
+  }
+  #henke .card {
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 12px;
+    padding: 5vh 5vw;
+    text-align: center;
+    background: rgba(18,19,21,.75);
+    backdrop-filter: blur(4px);
+    transition: border-color .2s, box-shadow .2s;
+    position: relative;
+    z-index: 1;
+  }
+  #henke:hover .card {
+    border-color: #d5b26a;
+    box-shadow: 0 0 30px rgba(213,178,106,.25);
+  }
+  #henke .star { width: 7vh; height: 7vh; margin-bottom: 2vh; }
+  #henke h2 {
+    color: #f4f2ec;
+    font-size: 3.4vh;
+    font-weight: 300;
+    letter-spacing: .5em;
+    text-transform: uppercase;
+    padding-left: .5em;
+  }
+  #henke p {
+    color: #9a978f;
+    font-size: 1.6vh;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    margin-top: 1.6vh;
+  }
+
+  #title {
+    position: absolute;
+    top: 4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    background: #fff;
+    color: #222;
+    font-size: 3.2vh;
+    font-weight: 800;
+    padding: 1vh 4vh;
+    border-radius: 99px;
+    border: 4px solid #222;
+    box-shadow: 0 6px 0 rgba(0,0,0,.25);
+    letter-spacing: .06em;
+    pointer-events: none;
+  }
+
+  @media (max-width: 700px) {
+    main { flex-direction: column; }
+    #ossian .road { height: 20vh; }
+  }
+</style>
+</head>
+<body>
+<div id="title">🚗 BILSPEL 🏁</div>
+<main>
+  <a class="half" id="ossian" href="ossian.html">
+    <div class="road"></div>
+    <div class="card">
+      <span class="emoji">🚗🐶</span>
+      <h2>Ossians bil</h2>
+      <p>Kör med Blixten &amp; Flash!</p>
+    </div>
+  </a>
+  <a class="half" id="henke" href="henke.html">
+    <div class="card">
+      <svg class="star" viewBox="0 0 100 100"><path d="M50 2 L58 42 L98 50 L58 58 L50 98 L42 58 L2 50 L42 42 Z" fill="#f4f2ec"/></svg>
+      <h2>Henkes bil</h2>
+      <p>Elbil · Norrland · 480 km</p>
+    </div>
+  </a>
+</main>
+</body>
+</html>

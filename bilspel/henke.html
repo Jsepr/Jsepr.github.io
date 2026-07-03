@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Henkes bil</title>
+<style>
+  :root {
+    --dash: #1b1d1f;
+    --dash-2: #232629;
+    --line: rgba(255,255,255,.14);
+    --text: #e8e6e1;
+    --dim: #9a978f;
+    --gold: #d5b26a;
+    --gold-dim: #8a744a;
+    --accent-on: #e4c47f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: "Helvetica Neue", "Avenir Next", system-ui, sans-serif;
+    background: #0c0d0e;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    color: var(--text);
+  }
+  #game { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #0c0d0e; }
+  #sky { position: absolute; inset: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  #frame {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    border: 10px solid #0c0d0e;
+    border-bottom: none;
+    border-radius: 22px 22px 0 0;
+    box-shadow: inset 0 0 80px rgba(0,0,0,.5);
+    z-index: 5;
+  }
+
+  .wiper {
+    position: absolute;
+    bottom: 42%;
+    width: 4px;
+    height: 32vh;
+    background: #17181a;
+    border-radius: 3px;
+    transform-origin: bottom center;
+    transform: rotate(-74deg);
+    z-index: 6;
+    pointer-events: none;
+    transition: transform .4s ease-in-out;
+  }
+  .wiper::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -2px;
+    width: 8px; height: 70%;
+    background: #222426;
+    border-radius: 4px;
+  }
+  #wiperL { left: 26%; }
+  #wiperR { left: 60%; }
+  .wiping .wiper { animation: wipe 1.3s ease-in-out infinite alternate; }
+  #wiperR.wiper { animation-delay: .06s; }
+  @keyframes wipe {
+    from { transform: rotate(-64deg); }
+    to   { transform: rotate(56deg); }
+  }
+
+  /* ---------- dashboard ---------- */
+  #dashboard {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 42%;
+    background: linear-gradient(180deg, var(--dash-2), var(--dash) 40%);
+    border-top: 1px solid var(--line);
+    z-index: 10;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 2.4vh 2.4vw;
+    gap: 1vw;
+  }
+  #dashboard::before {
+    content: "";
+    position: absolute;
+    top: 8px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line), transparent);
+  }
+
+  .cluster {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.6vh;
+  }
+  .microlabel {
+    font-size: 1.3vh;
+    letter-spacing: .32em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 500;
+  }
+
+  /* ---------- display cluster ---------- */
+  #gauges { flex: 0 0 21%; }
+  #display {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #121315;
+    padding: 2vh 1.6vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1vh;
+  }
+  #speedRow { display: flex; align-items: center; gap: 2vh; }
+  #speedNum {
+    font-size: 7vh;
+    font-weight: 200;
+    letter-spacing: .02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: color .25s;
+  }
+  #speedNum.over { color: #c96b5f; }
+  #limitSign {
+    width: 5.6vh; height: 5.6vh;
+    border-radius: 50%;
+    background: #ffcd00;
+    border: .9vh solid #cf2b1d;
+    color: #1a1a1a;
+    font-size: 2vh;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  #battWrap { width: 100%; display: flex; flex-direction: column; gap: .6vh; }
+  #battBar {
+    width: 100%; height: .9vh;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  #battFill {
+    height: 100%;
+    width: 100%;
+    background: var(--gold);
+    border-radius: 99px;
+    transition: width .4s;
+  }
+  #battRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.6vh;
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+  #battRow b { color: var(--text); font-weight: 500; }
+  #chargeBtn {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1.4vh;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    padding: 1.2vh 2.4vh;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: border-color .2s, color .2s, box-shadow .2s;
+  }
+  #chargeBtn:hover { border-color: var(--gold-dim); }
+  #chargeBtn.on {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 18px rgba(213,178,106,.25);
+  }
+
+  /* ---------- steering wheel ---------- */
+  #wheelZone {
+    flex: 0 0 32%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    position: relative;
+  }
+  #wheel {
+    position: relative;
+    width: 33vh; height: 33vh;
+    margin-top: -8vh;
+    cursor: grab;
+    touch-action: none;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,.5));
+  }
+  #wheel:active { cursor: grabbing; }
+  #wheel .rim {
+    position: absolute; inset: 0;
+    border: 2.6vh solid #26282b;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 3px #101113, 0 0 0 3px #101113;
+  }
+  #wheel .spoke {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 2vh; height: 15vh;
+    background: #26282b;
+    border-radius: 4px;
+    transform-origin: top center;
+  }
+  #wheel .spoke.s1 { transform: translate(-50%,0) rotate(90deg); }
+  #wheel .spoke.s2 { transform: translate(-50%,0) rotate(-90deg); }
+  #wheel .spoke.s3 { transform: translate(-50%,0) rotate(0deg); }
+  #horn {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 12vh; height: 12vh;
+    transform: translate(-50%,-50%);
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: radial-gradient(circle at 40% 32%, #2c2e31, #161719);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1vh;
+    color: var(--text);
+    font-family: inherit;
+  }
+  #brandLogo { width: 4.4vh; height: 4.4vh; color: #e8e6e1; display: block; }
+  #brandLogo svg { width: 100%; height: 100%; }
+  #horn .brand {
+    font-size: 1.1vh;
+    letter-spacing: .38em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  #horn:active { transform: translate(-50%,-50%) scale(.95); }
+
+  /* ---------- buttons ---------- */
+  #buttons {
+    flex: 0 0 26%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2vh;
+    align-content: center;
+    justify-items: center;
+  }
+  .btn {
+    width: 10vh; height: 9vh;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .8vh;
+    transition: background .15s, border-color .2s, box-shadow .2s;
+    font-family: inherit;
+  }
+  .btn .ic { font-size: 3vh; line-height: 1; filter: grayscale(1) brightness(1.4); }
+  .btn small {
+    font-size: 1.1vh;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 500;
+  }
+  .btn:hover { background: rgba(255,255,255,.03); }
+  .btn:active { background: rgba(255,255,255,.07); }
+  .btn.on {
+    border-color: var(--gold);
+    box-shadow: 0 0 16px rgba(213,178,106,.22), inset 0 0 12px rgba(213,178,106,.08);
+  }
+  .btn.on .ic { filter: none; }
+  .btn.on small { color: var(--gold); }
+  #startBtn.on { border-color: #7fd4a8; box-shadow: 0 0 16px rgba(127,212,168,.25); }
+  #startBtn.on small { color: #7fd4a8; }
+  .btn.blink.on { animation: blinkbtn .8s step-start infinite; }
+  @keyframes blinkbtn { 50% { border-color: var(--line); box-shadow: none; } }
+
+  /* ---------- sticks ---------- */
+  #sticks {
+    flex: 0 0 15%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2.2vw;
+  }
+  .stick-base {
+    position: relative;
+    width: 6.4vh;
+    height: 25vh;
+    background: #121315;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .stick-base .slot {
+    position: absolute;
+    left: 50%;
+    top: 8%;
+    bottom: 8%;
+    width: 6px;
+    transform: translateX(-50%);
+    background: #060707;
+    border-radius: 4px;
+  }
+  .gear-labels {
+    position: absolute;
+    left: -2.8vh;
+    top: 6%;
+    bottom: 6%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-weight: 500;
+    font-size: 1.9vh;
+    color: var(--dim);
+  }
+  .gear-labels span.active { color: var(--gold); }
+  .knob {
+    position: absolute;
+    left: 50%;
+    width: 7.4vh;
+    height: 7.4vh;
+    transform: translate(-50%,-50%);
+    border-radius: 50%;
+    cursor: grab;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 400;
+    font-size: 2.6vh;
+    z-index: 2;
+    border: 1px solid var(--line);
+    box-shadow: 0 6px 10px rgba(0,0,0,.5);
+  }
+  .knob:active { cursor: grabbing; }
+  #gearKnob { background: radial-gradient(circle at 40% 32%, #34373a, #1a1c1e); color: var(--text); top: 8%; }
+  #brakeKnob { background: radial-gradient(circle at 40% 32%, #3a3226, #1e1a13); color: var(--gold); top: 92%; font-size: 3vh; }
+  .stick-label {
+    position: absolute;
+    bottom: -3.2vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.1vh;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: var(--dim);
+    white-space: nowrap;
+  }
+
+  /* ---------- pedals ---------- */
+  #pedals {
+    position: absolute;
+    left: 40%;
+    transform: translateX(-50%);
+    bottom: 1.2vh;
+    display: flex;
+    gap: 2vw;
+    z-index: 20;
+  }
+  .pedal {
+    width: 12vh;
+    height: 14vh;
+    border: 1px solid var(--line);
+    border-radius: 10px 10px 16px 16px;
+    font-family: inherit;
+    font-size: 1.3vh;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform .08s, background .15s;
+    touch-action: none;
+    color: var(--dim);
+    background: linear-gradient(180deg, #202225, #17181a);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1vh;
+  }
+  .pedal .bars { display: flex; flex-direction: column; gap: .8vh; width: 55%; }
+  .pedal .bars i { display: block; height: 3px; background: #3a3d41; border-radius: 2px; }
+  .pedal.pressed { transform: translateY(5px); background: #131415; }
+  #gas.pressed .bars i { background: var(--gold); }
+  #brake.pressed .bars i { background: #c96b5f; }
+
+  /* ---------- title ---------- */
+  #title {
+    position: absolute;
+    top: 3vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1.6vh;
+    z-index: 7;
+    pointer-events: none;
+  }
+  #title .star { width: 3.6vh; height: 3.6vh; opacity: .95; }
+  #title .name {
+    font-size: 2.4vh;
+    font-weight: 300;
+    letter-spacing: .5em;
+    text-transform: uppercase;
+    color: #f4f2ec;
+    text-shadow: 0 1px 8px rgba(0,0,0,.6);
+  }
+
+  /* ---------- brand selector ---------- */
+  #brandWrap {
+    position: absolute;
+    top: 3vh;
+    right: 2.4vw;
+    z-index: 7;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .6vh;
+  }
+  #brandWrap label {
+    font-size: 1.1vh;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: rgba(232,230,225,.75);
+    text-shadow: 0 1px 6px rgba(0,0,0,.5);
+  }
+  #brandSel {
+    font-family: inherit;
+    font-size: 1.5vh;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding: .8vh 1.6vh;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: rgba(18,19,21,.85);
+    color: var(--text);
+    cursor: pointer;
+  }
+  #brandSel:hover { border-color: var(--gold-dim); }
+
+  #blinkArrowL, #blinkArrowR {
+    position: absolute;
+    top: 3.2vh;
+    font-size: 3.6vh;
+    z-index: 7;
+    opacity: 0;
+    color: var(--gold);
+    text-shadow: 0 0 12px rgba(213,178,106,.8);
+    pointer-events: none;
+  }
+  #blinkArrowL { left: 4vw; }
+  #blinkArrowR { right: 4vw; }
+  .blinking { animation: blinkarrow .8s step-start infinite; }
+  @keyframes blinkarrow { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="sky"></canvas>
+  <div id="frame"></div>
+  <div id="title">
+    <svg class="star" viewBox="0 0 100 100"><path d="M50 2 L58 42 L98 50 L58 58 L50 98 L42 58 L2 50 L42 42 Z" fill="#f4f2ec"/></svg>
+    <div class="name">Henkes bil</div>
+  </div>
+  <div id="brandWrap">
+    <label for="brandSel">Märke</label>
+    <select id="brandSel"></select>
+  </div>
+  <div id="blinkArrowL">◀</div>
+  <div id="blinkArrowR">▶</div>
+  <div id="wiperL" class="wiper"></div>
+  <div id="wiperR" class="wiper"></div>
+
+  <div id="dashboard">
+    <div id="gauges" class="cluster">
+      <div id="display">
+        <div id="speedRow">
+          <div id="speedNum">0</div>
+          <div id="limitSign">70</div>
+        </div>
+        <div class="microlabel">km/h</div>
+        <div id="battWrap">
+          <div id="battBar"><div id="battFill"></div></div>
+          <div id="battRow"><span><b id="battPct">100</b>%</span><span><b id="rangeKm">480</b> km</span></div>
+        </div>
+      </div>
+      <button id="chargeBtn">⚡ Ladda</button>
+    </div>
+
+    <div id="wheelZone">
+      <div id="wheel">
+        <div class="rim"></div>
+        <div class="spoke s1"></div>
+        <div class="spoke s2"></div>
+        <div class="spoke s3"></div>
+        <button id="horn" title="Tuta">
+          <span id="brandLogo"></span>
+          <span class="brand" id="brandName">Polestar</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="buttons" class="cluster">
+      <button class="btn" id="startBtn"><span class="ic">⏻</span><small>Start</small></button>
+      <button class="btn" id="lightsBtn"><span class="ic">💡</span><small>Ljus</small></button>
+      <button class="btn" id="rainBtn"><span class="ic">🌧️</span><small>Regn</small></button>
+      <button class="btn blink" id="blinkL"><span class="ic">◀</span><small>Blink</small></button>
+      <button class="btn" id="wiperBtn"><span class="ic">🌀</span><small>Torkare</small></button>
+      <button class="btn blink" id="blinkR"><span class="ic">▶</span><small>Blink</small></button>
+      <button class="btn" id="musicBtn"><span class="ic">♫</span><small>Media</small></button>
+      <button class="btn" id="nightBtn"><span class="ic">☾</span><small>Natt</small></button>
+      <button class="btn" id="perfBtn"><span class="ic">⚡</span><small>Perf</small></button>
+    </div>
+
+    <div id="sticks" class="cluster">
+      <div class="stick-base" id="gearBase">
+        <div class="gear-labels"><span>P</span><span>R</span><span>N</span><span>D</span></div>
+        <div class="slot"></div>
+        <div class="knob" id="gearKnob">P</div>
+        <div class="stick-label">Växel</div>
+      </div>
+      <div class="stick-base" id="brakeBase">
+        <div class="slot"></div>
+        <div class="knob" id="brakeKnob">⏚</div>
+        <div class="stick-label">P-broms</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pedals">
+    <button class="pedal" id="brake"><span class="bars"><i></i><i></i><i></i></span>Broms</button>
+    <button class="pedal" id="gas"><span class="bars"><i></i><i></i><i></i></span>Gas</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============ state ============ */
+const S = {
+  engineOn: false,
+  speed: 0,
+  gear: "P",
+  gas: false,
+  brake: false,
+  handbrake: false,
+  wheelAngle: 0,
+  lights: false,
+  night: false,
+  rain: false,
+  wipers: false,
+  music: false,
+  perf: false,
+  blinkL: false,
+  blinkR: false,
+  charging: false,
+  battery: 100,       // percent
+  speedLimit: 70,
+  distance: 0,
+  curve: 0,
+  targetCurve: 0,
+  carX: 0,
+  rainDrops: [],
+};
+
+const MAXSPEED = 210;
+const FULL_RANGE = 480;
+
+/* ============ audio ============ */
+let AC = null;
+let evOsc = null, evOsc2 = null, evGain = null;
+let musicTimer = null;
+
+function audio() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+
+function beep(freq, dur, type = "sine", vol = 0.15, when = 0) {
+  const ac = audio();
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, ac.currentTime + when);
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + when + dur);
+  o.connect(g).connect(ac.destination);
+  o.start(ac.currentTime + when);
+  o.stop(ac.currentTime + when + dur + 0.05);
+}
+
+function hornSound() {
+  beep(370, 0.4, "square", 0.1);
+  beep(466, 0.4, "square", 0.1);
+}
+function clickSound() { beep(1200, 0.04, "sine", 0.08); }
+function tickSound() { beep(1600, 0.025, "sine", 0.05); }
+
+function startEVSound() {
+  const ac = audio();
+  beep(660, 0.12, "sine", 0.1);
+  beep(880, 0.14, "sine", 0.1, 0.12);
+  beep(1100, 0.2, "sine", 0.08, 0.26);
+  evOsc = ac.createOscillator();
+  evOsc2 = ac.createOscillator();
+  evGain = ac.createGain();
+  evOsc.type = "sine";
+  evOsc.frequency.value = 70;
+  evOsc2.type = "triangle";
+  evOsc2.frequency.value = 140;
+  evGain.gain.value = 0;
+  const g2 = ac.createGain();
+  g2.gain.value = 0.25;
+  evOsc.connect(evGain);
+  evOsc2.connect(g2).connect(evGain);
+  evGain.connect(ac.destination);
+  evOsc.start(); evOsc2.start();
+  evGain.gain.linearRampToValueAtTime(0.035, ac.currentTime + 0.8);
+}
+function stopEVSound() {
+  if (!evOsc) return;
+  const ac = audio();
+  beep(880, 0.12, "sine", 0.08);
+  beep(550, 0.2, "sine", 0.08, 0.12);
+  evGain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.3);
+  evOsc.stop(ac.currentTime + 0.4);
+  evOsc2.stop(ac.currentTime + 0.4);
+  evOsc = null; evOsc2 = null;
+}
+
+const CHILL = [220, 277, 330, 277, 220, 330, 415, 330, 247, 294, 370, 294];
+let melodyIdx = 0;
+function startMusic() {
+  melodyIdx = 0;
+  musicTimer = setInterval(() => {
+    const n = CHILL[melodyIdx % CHILL.length];
+    beep(n, 0.5, "sine", 0.07);
+    beep(n * 2, 0.25, "sine", 0.03);
+    melodyIdx++;
+  }, 420);
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+/* ============ brand logos (simplified, monochrome) ============ */
+const LOGOS = {
+  "ŠKODA": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M26 66 Q38 34 74 34 L52 46 L66 46 L40 66 Z" fill="currentColor"/><circle cx="36" cy="44" r="4" fill="currentColor"/></svg>`,
+  "VOLVO": `<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="34" fill="none" stroke="currentColor" stroke-width="8"/><path d="M72 32 L88 16 M88 16 H72 M88 16 V32" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/></svg>`,
+  "POLESTAR": `<svg viewBox="0 0 100 100"><path d="M50 2 L58 42 L98 50 L58 58 L50 98 L42 58 L2 50 L42 42 Z" fill="currentColor"/></svg>`,
+  "SAAB": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M28 62 Q30 38 52 36 Q66 35 70 44 L60 48 Q56 42 48 44 Q38 46 40 62 Z" fill="currentColor"/><circle cx="62" cy="54" r="3.5" fill="currentColor"/></svg>`,
+  "TESLA": `<svg viewBox="0 0 100 100"><path d="M18 26 Q50 16 82 26 L74 40 Q68 34 56 33 L53 84 H47 L44 33 Q32 34 26 40 Z" fill="currentColor"/></svg>`,
+  "BMW": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M50 50 V14 A36 36 0 0 1 86 50 Z" fill="currentColor"/><path d="M50 50 H14 A36 36 0 0 0 50 86 Z" fill="currentColor"/></svg>`,
+  "MERCEDES": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/><path d="M50 50 L50 10 M50 50 L15 72 M50 50 L85 72" stroke="currentColor" stroke-width="9" stroke-linecap="round"/></svg>`,
+  "AUDI": `<svg viewBox="0 0 100 100"><g fill="none" stroke="currentColor" stroke-width="6"><circle cx="20" cy="50" r="15"/><circle cx="40" cy="50" r="15"/><circle cx="60" cy="50" r="15"/><circle cx="80" cy="50" r="15"/></g></svg>`,
+  "VOLKSWAGEN": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M22 26 L34 26 L50 62 L66 26 L78 26 L56 78 L44 78 Z M38 26 L50 50 L62 26" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg>`,
+  "TOYOTA": `<svg viewBox="0 0 100 100"><g fill="none" stroke="currentColor" stroke-width="6"><ellipse cx="50" cy="50" rx="42" ry="27"/><ellipse cx="50" cy="50" rx="13" ry="27"/><ellipse cx="50" cy="37" rx="28" ry="11"/></g></svg>`,
+  "PORSCHE": `<svg viewBox="0 0 100 100"><path d="M50 8 L84 18 V52 Q84 80 50 94 Q16 80 16 52 V18 Z" fill="none" stroke="currentColor" stroke-width="7"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="currentColor" font-family="sans-serif">P</text></svg>`,
+  "FERRARI": `<svg viewBox="0 0 100 100"><path d="M30 8 H70 V58 Q70 82 50 92 Q30 82 30 58 Z" fill="none" stroke="currentColor" stroke-width="7"/><text x="50" y="62" text-anchor="middle" font-size="32" font-weight="800" font-style="italic" fill="currentColor" font-family="sans-serif">SF</text></svg>`,
+};
+
+/* ============ brand selector ============ */
+const BRANDS = [
+  { name: "POLESTAR",   accent: "#d5b26a" },
+  { name: "VOLVO",      accent: "#7fa8e0" },
+  { name: "ŠKODA",      accent: "#5fbf9a" },
+  { name: "SAAB",       accent: "#a8bccc" },
+  { name: "TESLA",      accent: "#d97a72" },
+  { name: "BMW",        accent: "#6aa6dd" },
+  { name: "MERCEDES",   accent: "#c2c9d0" },
+  { name: "AUDI",       accent: "#cf7288" },
+  { name: "VOLKSWAGEN", accent: "#7d9bd4" },
+  { name: "TOYOTA",     accent: "#d98a8a" },
+  { name: "PORSCHE",    accent: "#cdb27a" },
+  { name: "FERRARI",    accent: "#dd8a5f" },
+];
+const brandSel = document.getElementById("brandSel");
+const brandName = document.getElementById("brandName");
+const brandLogo = document.getElementById("brandLogo");
+BRANDS.forEach(b => {
+  const o = document.createElement("option");
+  o.value = b.name;
+  o.textContent = b.name;
+  brandSel.appendChild(o);
+});
+function applyBrand(name) {
+  const b = BRANDS.find(x => x.name === name) || BRANDS[0];
+  brandName.textContent = b.name;
+  brandName.style.letterSpacing = b.name.length > 8 ? ".14em" : ".38em";
+  brandLogo.innerHTML = LOGOS[b.name];
+  document.documentElement.style.setProperty("--gold", b.accent);
+  brandSel.value = b.name;
+  localStorage.setItem("henke-brand", b.name);
+}
+brandSel.addEventListener("change", () => { applyBrand(brandSel.value); clickSound(); });
+applyBrand(localStorage.getItem("henke-brand") || "POLESTAR");
+
+/* ============ steering wheel ============ */
+const wheel = document.getElementById("wheel");
+let wheelDrag = null;
+
+function wheelCenter() {
+  const r = wheel.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+function pointerAngle(e) {
+  const c = wheelCenter();
+  return Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180 / Math.PI;
+}
+wheel.addEventListener("pointerdown", e => {
+  if (e.target.closest("#horn")) return;
+  wheel.setPointerCapture(e.pointerId);
+  wheelDrag = { last: pointerAngle(e) };
+});
+wheel.addEventListener("pointermove", e => {
+  if (!wheelDrag) return;
+  const a = pointerAngle(e);
+  let d = a - wheelDrag.last;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  wheelDrag.last = a;
+  S.wheelAngle = Math.max(-270, Math.min(270, S.wheelAngle + d));
+});
+const endWheel = () => { wheelDrag = null; };
+wheel.addEventListener("pointerup", endWheel);
+wheel.addEventListener("pointercancel", endWheel);
+
+document.getElementById("horn").addEventListener("pointerdown", e => {
+  e.stopPropagation();
+  hornSound();
+});
+
+/* ============ toggle buttons ============ */
+function toggleBtn(id, key, extra) {
+  const el = document.getElementById(id);
+  el.addEventListener("click", () => {
+    S[key] = !S[key];
+    el.classList.toggle("on", S[key]);
+    clickSound();
+    if (extra) extra(S[key]);
+  });
+  return el;
+}
+
+document.getElementById("startBtn").addEventListener("click", () => {
+  S.engineOn = !S.engineOn;
+  document.getElementById("startBtn").classList.toggle("on", S.engineOn);
+  if (S.engineOn) startEVSound();
+  else stopEVSound();
+});
+
+toggleBtn("lightsBtn", "lights");
+toggleBtn("nightBtn", "night");
+toggleBtn("rainBtn", "rain");
+toggleBtn("wiperBtn", "wipers", on => {
+  document.getElementById("game").classList.toggle("wiping", on);
+});
+toggleBtn("musicBtn", "music", on => on ? startMusic() : stopMusic());
+toggleBtn("perfBtn", "perf");
+toggleBtn("blinkL", "blinkL", on => {
+  if (on) { S.blinkR = false; document.getElementById("blinkR").classList.remove("on"); }
+  document.getElementById("blinkArrowL").classList.toggle("blinking", on);
+  if (!on) document.getElementById("blinkArrowL").style.opacity = 0;
+  document.getElementById("blinkArrowR").classList.toggle("blinking", S.blinkR);
+});
+toggleBtn("blinkR", "blinkR", on => {
+  if (on) { S.blinkL = false; document.getElementById("blinkL").classList.remove("on"); document.getElementById("blinkArrowL").classList.remove("blinking"); }
+  document.getElementById("blinkArrowR").classList.toggle("blinking", on);
+  if (!on) document.getElementById("blinkArrowR").style.opacity = 0;
+});
+
+setInterval(() => {
+  if (S.blinkL || S.blinkR) tickSound();
+}, 800);
+
+/* ============ charging ============ */
+const chargeBtn = document.getElementById("chargeBtn");
+chargeBtn.addEventListener("click", () => {
+  S.charging = !S.charging;
+  chargeBtn.classList.toggle("on", S.charging);
+  clickSound();
+});
+
+/* ============ pedals ============ */
+function pedal(id, key) {
+  const el = document.getElementById(id);
+  const down = e => { e.preventDefault(); S[key] = true; el.classList.add("pressed"); };
+  const up = () => { S[key] = false; el.classList.remove("pressed"); };
+  el.addEventListener("pointerdown", down);
+  el.addEventListener("pointerup", up);
+  el.addEventListener("pointerleave", up);
+  el.addEventListener("pointercancel", up);
+}
+pedal("gas", "gas");
+pedal("brake", "brake");
+
+/* ============ gear stick ============ */
+const gearKnob = document.getElementById("gearKnob");
+const gearBase = document.getElementById("gearBase");
+const GEARS = ["P", "R", "N", "D"];
+const GEAR_POS = [8, 36, 64, 92];
+
+function setGear(g) {
+  if (S.gear === g) return;
+  S.gear = g;
+  gearKnob.textContent = g;
+  gearKnob.style.top = GEAR_POS[GEARS.indexOf(g)] + "%";
+  clickSound();
+  document.querySelectorAll(".gear-labels span").forEach((s, i) =>
+    s.classList.toggle("active", GEARS[i] === g));
+}
+document.querySelectorAll(".gear-labels span")[0].classList.add("active");
+
+let gearDrag = false;
+gearKnob.addEventListener("pointerdown", e => {
+  gearKnob.setPointerCapture(e.pointerId);
+  gearDrag = true;
+});
+gearKnob.addEventListener("pointermove", e => {
+  if (!gearDrag) return;
+  const r = gearBase.getBoundingClientRect();
+  const pct = ((e.clientY - r.top) / r.height) * 100;
+  let best = 0, bestDist = 1e9;
+  GEAR_POS.forEach((p, i) => {
+    const d = Math.abs(p - pct);
+    if (d < bestDist) { bestDist = d; best = i; }
+  });
+  setGear(GEARS[best]);
+});
+const endGear = () => { gearDrag = false; };
+gearKnob.addEventListener("pointerup", endGear);
+gearKnob.addEventListener("pointercancel", endGear);
+
+/* ============ handbrake ============ */
+const brakeKnob = document.getElementById("brakeKnob");
+const brakeBase = document.getElementById("brakeBase");
+let brakeDrag = false;
+function setHandbrake(on) {
+  S.handbrake = on;
+  brakeKnob.style.top = on ? "8%" : "92%";
+  brakeKnob.style.color = on ? "#c96b5f" : "var(--gold)";
+}
+brakeKnob.addEventListener("pointerdown", e => {
+  brakeKnob.setPointerCapture(e.pointerId);
+  brakeDrag = true;
+});
+brakeKnob.addEventListener("pointermove", e => {
+  if (!brakeDrag) return;
+  const r = brakeBase.getBoundingClientRect();
+  const pct = ((e.clientY - r.top) / r.height) * 100;
+  const on = pct < 50;
+  if (on !== S.handbrake) { setHandbrake(on); clickSound(); }
+});
+const endBrake = () => { brakeDrag = false; };
+brakeKnob.addEventListener("pointerup", endBrake);
+brakeKnob.addEventListener("pointercancel", endBrake);
+
+/* ============ keyboard ============ */
+addEventListener("keydown", e => {
+  if (e.repeat) return;
+  if (e.key === "ArrowUp") { S.gas = true; document.getElementById("gas").classList.add("pressed"); }
+  if (e.key === "ArrowDown") { S.brake = true; document.getElementById("brake").classList.add("pressed"); }
+  if (e.key === " ") hornSound();
+  if (e.key === "ArrowLeft") S.wheelAngle = Math.max(-270, S.wheelAngle - 30);
+  if (e.key === "ArrowRight") S.wheelAngle = Math.min(270, S.wheelAngle + 30);
+});
+addEventListener("keyup", e => {
+  if (e.key === "ArrowUp") { S.gas = false; document.getElementById("gas").classList.remove("pressed"); }
+  if (e.key === "ArrowDown") { S.brake = false; document.getElementById("brake").classList.remove("pressed"); }
+});
+
+/* ============ canvas world — nordic dusk ============ */
+const cv = document.getElementById("sky");
+const cx = cv.getContext("2d");
+function resize() {
+  cv.width = innerWidth * devicePixelRatio;
+  cv.height = innerHeight * devicePixelRatio;
+  cx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+addEventListener("resize", resize);
+resize();
+
+const trees = [];
+for (let i = 0; i < 16; i++) {
+  trees.push({ z: Math.random(), side: Math.random() < 0.5 ? -1 : 1, kind: Math.floor(Math.random() * 2) });
+}
+const clouds = [];
+for (let i = 0; i < 4; i++) {
+  clouds.push({ x: Math.random(), y: 0.06 + Math.random() * 0.16, s: 0.8 + Math.random() * 1.2 });
+}
+
+const LIMITS = [30, 50, 70, 90, 110, 120];
+let limitIdx = 3;
+const signs = [{ z: 0.35, limit: 90 }, { z: 0.85, limit: 110 }];
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function mixColor(day, night, t) {
+  const d = parseInt(day.slice(1), 16), n = parseInt(night.slice(1), 16);
+  const r = Math.round(lerp((d >> 16) & 255, (n >> 16) & 255, t));
+  const g = Math.round(lerp((d >> 8) & 255, (n >> 8) & 255, t));
+  const b = Math.round(lerp(d & 255, n & 255, t));
+  return `rgb(${r},${g},${b})`;
+}
+
+let nightT = 0;
+
+function drawWorld(dt, now) {
+  const W = innerWidth, H = innerHeight;
+  const horizon = H * 0.36;
+  nightT = lerp(nightT, S.night ? 1 : 0, dt * 2);
+
+  const sky = cx.createLinearGradient(0, 0, 0, horizon);
+  sky.addColorStop(0, mixColor("#b9c7cf", "#0a0e18", nightT));
+  sky.addColorStop(1, mixColor("#e6d9c4", "#1d2433", nightT));
+  cx.fillStyle = sky;
+  cx.fillRect(0, 0, W, horizon + 2);
+
+  // low nordic sun / moon
+  cx.beginPath();
+  cx.arc(W * 0.72, horizon * 0.62, 30, 0, 7);
+  cx.fillStyle = nightT > 0.5 ? "#e8e6e1" : "#f2ddb0";
+  cx.shadowColor = nightT > 0.5 ? "#e8e6e1" : "#f2ddb0";
+  cx.shadowBlur = 50;
+  cx.fill();
+  cx.shadowBlur = 0;
+
+  if (nightT > 0.3) {
+    cx.fillStyle = `rgba(255,255,255,${(nightT - 0.3) * 1.1})`;
+    for (let i = 0; i < 60; i++) {
+      const sx = ((i * 137.5) % W);
+      const sy = ((i * 91.3) % (horizon * 0.9));
+      const tw = Math.sin(now / 500 + i) > 0.5 ? 1.8 : 1;
+      cx.fillRect(sx, sy, tw, tw);
+    }
+  }
+
+  clouds.forEach(c => {
+    c.x += dt * 0.006 * c.s;
+    if (c.x > 1.2) c.x = -0.2;
+    const cxp = c.x * W, cyp = c.y * H;
+    cx.fillStyle = `rgba(240,238,232,${lerp(0.5, 0.12, nightT)})`;
+    cx.beginPath();
+    cx.ellipse(cxp, cyp, 55 * c.s, 14 * c.s, 0, 0, 7);
+    cx.fill();
+  });
+
+  // fjäll silhouette
+  cx.fillStyle = mixColor("#8d9aa3", "#141a26", nightT);
+  cx.beginPath();
+  cx.moveTo(0, horizon);
+  for (let x = 0; x <= W; x += 24) {
+    cx.lineTo(x, horizon - 40 * Math.abs(Math.sin(x / 300 + 2)) - 18 * Math.sin(x / 90));
+  }
+  cx.lineTo(W, horizon);
+  cx.fill();
+
+  // ground
+  cx.fillStyle = mixColor("#5e6b5a", "#101610", nightT);
+  cx.fillRect(0, horizon, W, H - horizon);
+
+  // road
+  const roadBottomW = W * 0.85;
+  const roadTopW = W * 0.04;
+  const steer = S.wheelAngle / 270;
+  S.targetCurve = steer * 1.4;
+  S.curve = lerp(S.curve, S.targetCurve, dt * 3);
+
+  const dashH = H * 0.42;
+  const roadH = (H - dashH) - horizon;
+  const bottomY = H - dashH + 30;
+
+  const segs = 24;
+  const pts = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const y = bottomY - roadH * t - 30 * t;
+    const w = lerp(roadBottomW, roadTopW, Math.pow(t, 1.15));
+    const xoff = S.curve * Math.pow(t, 2) * W * 0.45 - S.carX * (1 - t) * W * 0.18;
+    pts.push({ y, w, x: W / 2 + xoff });
+  }
+
+  cx.fillStyle = mixColor("#3c4046", "#1c1f24", nightT);
+  cx.beginPath();
+  cx.moveTo(pts[0].x - pts[0].w / 2, pts[0].y);
+  pts.forEach(p => cx.lineTo(p.x - p.w / 2, p.y));
+  for (let i = pts.length - 1; i >= 0; i--) cx.lineTo(pts[i].x + pts[i].w / 2, pts[i].y);
+  cx.fill();
+
+  cx.strokeStyle = mixColor("#c9c4b8", "#5c5a50", nightT);
+  cx.lineWidth = 3;
+  [-1, 1].forEach(s => {
+    cx.beginPath();
+    pts.forEach((p, i) => i ? cx.lineTo(p.x + s * p.w / 2, p.y) : cx.moveTo(p.x + s * p.w / 2, p.y));
+    cx.stroke();
+  });
+
+  cx.strokeStyle = mixColor("#e8e6e1", "#8a877d", nightT);
+  const dashPhase = (S.distance * 0.06) % 1;
+  for (let i = 0; i < segs; i++) {
+    const t0 = i / segs;
+    const on = Math.floor((t0 * 8 + dashPhase * 8)) % 2 === 0;
+    if (!on) continue;
+    const p0 = pts[i], p1 = pts[Math.min(i + 1, segs)];
+    cx.lineWidth = lerp(5, 1, t0);
+    cx.beginPath();
+    cx.moveTo(p0.x, p0.y);
+    cx.lineTo(lerp(p0.x, p1.x, 0.5), lerp(p0.y, p1.y, 0.5));
+    cx.stroke();
+  }
+
+  // granar
+  trees.forEach(tr => {
+    tr.z -= dt * S.speed * 0.004 * (S.gear === "R" ? -1 : 1);
+    if (tr.z < 0) { tr.z += 1; tr.side = Math.random() < 0.5 ? -1 : 1; }
+    if (tr.z > 1) { tr.z -= 1; }
+    const t = 1 - tr.z;
+    const i = Math.min(segs, Math.round(lerp(segs, 0, tr.z)));
+    const p = pts[i];
+    const px = p.x + tr.side * (p.w / 2 + lerp(10, 140, t));
+    const py = p.y;
+    const s = lerp(0.1, 1.5, Math.pow(t, 1.6));
+    drawSpruce(px, py, s, tr.kind);
+  });
+
+  signs.forEach(sg => {
+    sg.z -= dt * S.speed * 0.004 * (S.gear === "R" ? -1 : 1);
+    if (sg.z < 0) {
+      sg.z += 1;
+      S.speedLimit = sg.limit;
+      limitIdx = (limitIdx + 1) % LIMITS.length;
+      sg.limit = LIMITS[limitIdx];
+    }
+    if (sg.z > 1) sg.z -= 1;
+    const t = 1 - sg.z;
+    const i = Math.min(segs, Math.round(lerp(segs, 0, sg.z)));
+    const p = pts[i];
+    const px = p.x + p.w / 2 + lerp(8, 90, t);
+    const s = lerp(0.12, 1.5, Math.pow(t, 1.6));
+    drawSign(px, p.y, s, sg.limit);
+  });
+
+  if (S.lights) {
+    const glow = cx.createRadialGradient(W / 2, bottomY, 40, W / 2, horizon, W * 0.55);
+    glow.addColorStop(0, `rgba(240,235,210,${lerp(0.1, 0.28, nightT)})`);
+    glow.addColorStop(1, "rgba(240,235,210,0)");
+    cx.fillStyle = glow;
+    cx.beginPath();
+    cx.moveTo(W / 2 - roadBottomW * 0.3, bottomY + 40);
+    cx.lineTo(pts[segs].x - 60, horizon);
+    cx.lineTo(pts[segs].x + 60, horizon);
+    cx.lineTo(W / 2 + roadBottomW * 0.3, bottomY + 40);
+    cx.fill();
+  }
+
+  if (nightT > 0.01) {
+    cx.fillStyle = `rgba(4,6,12,${nightT * (S.lights ? 0.2 : 0.38)})`;
+    cx.fillRect(0, horizon, W, H - horizon);
+  }
+
+  if (S.rain) {
+    if (S.rainDrops.length < 140) {
+      for (let i = 0; i < 6; i++) S.rainDrops.push({ x: Math.random() * W, y: Math.random() * H * 0.6, v: 500 + Math.random() * 300 });
+    }
+    cx.strokeStyle = "rgba(200,215,230,.4)";
+    cx.lineWidth = 1.5;
+    S.rainDrops.forEach(d => {
+      d.y += d.v * dt;
+      d.x -= 80 * dt;
+      if (d.y > H * 0.62) { d.y = -10; d.x = Math.random() * W; }
+      cx.beginPath();
+      cx.moveTo(d.x, d.y);
+      cx.lineTo(d.x - 3, d.y + 12);
+      cx.stroke();
+    });
+    if (!S.wipers) {
+      cx.fillStyle = "rgba(160,180,200,.13)";
+      cx.fillRect(0, 0, W, H * 0.62);
+    }
+  } else {
+    S.rainDrops.length = 0;
+  }
+
+  if (S.perf && S.speed > 60) {
+    cx.strokeStyle = `rgba(213,178,106,.35)`;
+    cx.lineWidth = 2;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + now / 350;
+      const r1 = 140 + (now / 5 + i * 53) % 220;
+      const cxp = W / 2, cyp = horizon + 40;
+      cx.beginPath();
+      cx.moveTo(cxp + Math.cos(a) * r1, cyp + Math.sin(a) * r1 * 0.5);
+      cx.lineTo(cxp + Math.cos(a) * (r1 + 60), cyp + Math.sin(a) * (r1 + 60) * 0.5);
+      cx.stroke();
+    }
+  }
+}
+
+function drawSign(x, y, s, limit) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s, s);
+  cx.fillStyle = mixColor("#9aa0a6", "#3c4046", nightT);
+  cx.fillRect(-3, -60, 6, 60);
+  cx.beginPath();
+  cx.arc(0, -82, 26, 0, 7);
+  cx.fillStyle = mixColor("#cf2b1d", "#6e1710", nightT);
+  cx.fill();
+  cx.beginPath();
+  cx.arc(0, -82, 19, 0, 7);
+  cx.fillStyle = mixColor("#ffcd00", "#8a7000", nightT);
+  cx.fill();
+  cx.fillStyle = "#1a1a1a";
+  cx.font = "700 19px 'Helvetica Neue', system-ui, sans-serif";
+  cx.textAlign = "center";
+  cx.textBaseline = "middle";
+  cx.fillText(limit, 0, -81);
+  cx.restore();
+}
+
+function drawSpruce(x, y, s, kind) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s, s);
+  cx.fillStyle = mixColor("#4a3826", "#1c150e", nightT);
+  cx.fillRect(-4, -18, 8, 18);
+  cx.fillStyle = mixColor(kind ? "#33523a" : "#2b4632", "#0d1810", nightT);
+  for (let l = 0; l < 3; l++) {
+    const w = 34 - l * 8, yy = -18 - l * 22;
+    cx.beginPath();
+    cx.moveTo(-w, yy);
+    cx.lineTo(0, yy - 34);
+    cx.lineTo(w, yy);
+    cx.fill();
+  }
+  cx.restore();
+}
+
+/* ============ game loop ============ */
+const speedNum = document.getElementById("speedNum");
+const limitSign = document.getElementById("limitSign");
+const battFill = document.getElementById("battFill");
+const battPct = document.getElementById("battPct");
+const rangeKm = document.getElementById("rangeKm");
+let last = performance.now();
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  const max = S.perf ? MAXSPEED : 130;
+  const hasCharge = S.battery > 0;
+  const canDrive = S.engineOn && !S.handbrake && hasCharge && (S.gear === "D" || S.gear === "R");
+  const gearMax = S.gear === "R" ? 25 : max;
+
+  if (canDrive && S.gas && !S.charging) {
+    S.speed = Math.min(gearMax, S.speed + dt * (S.perf ? 90 : 45));
+  } else {
+    S.speed = Math.max(0, S.speed - dt * (S.brake || S.handbrake ? 110 : 16));
+  }
+  if (!S.engineOn || S.gear === "P" || S.gear === "N" || !hasCharge) {
+    S.speed = Math.max(0, S.speed - dt * 50);
+  }
+
+  S.distance += S.speed * dt * (S.gear === "R" ? -1 : 1);
+
+  // battery: drain by driving, charge when plugged in & stationary
+  S.battery -= Math.abs(S.speed) * dt * (S.perf ? 0.02 : 0.011);
+  if (S.charging && S.speed < 1) S.battery += dt * 6;
+  S.battery = Math.max(0, Math.min(100, S.battery));
+
+  S.carX += S.curve * S.speed * dt * 0.004;
+  S.carX = Math.max(-1.5, Math.min(1.5, S.carX));
+  if (S.speed < 1) S.carX = lerp(S.carX, 0, dt);
+  if (!wheelDrag && S.speed > 2) {
+    S.wheelAngle = lerp(S.wheelAngle, 0, dt * 1.2);
+    S.carX = lerp(S.carX, 0, dt * 0.5);
+  }
+
+  if (evOsc) {
+    evOsc.frequency.value = 70 + S.speed * 2.2;
+    evOsc2.frequency.value = 140 + S.speed * 4.4;
+    evGain.gain.value = 0.035 + Math.min(0.03, S.speed * 0.0004);
+  }
+
+  wheel.style.transform = `rotate(${S.wheelAngle}deg)`;
+  speedNum.textContent = Math.round(S.speed);
+  speedNum.classList.toggle("over", S.speed > S.speedLimit + 3);
+  limitSign.textContent = S.speedLimit;
+  battFill.style.width = S.battery + "%";
+  battFill.style.background = S.battery < 15 ? "#c96b5f" : "var(--gold)";
+  battPct.textContent = Math.round(S.battery);
+  rangeKm.textContent = Math.round(S.battery / 100 * FULL_RANGE);
+
+  drawWorld(dt, now);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+addEventListener("pointerdown", () => audio(), { once: true });
+</script>
+</body>
+</html>

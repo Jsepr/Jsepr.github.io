@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ossians bil</title>
+<style>
+  :root {
+    --dash: #d94f30;
+    --dash-dark: #b23c22;
+    --dash-deep: #8f2e18;
+    --cream: #fff3dc;
+    --panel: #ffe8c2;
+    --night: #1b2440;
+    --btn-shadow: 0 5px 0 rgba(0,0,0,.25);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: "Baloo 2", "Comic Sans MS", "Chalkboard SE", "Marker Felt", cursive, sans-serif;
+    background: #111;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--night);
+  }
+  #sky { position: absolute; inset: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* ---------- windshield frame ---------- */
+  #frame {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    border: 18px solid var(--dash-deep);
+    border-bottom: none;
+    border-radius: 38px 38px 0 0;
+    box-shadow: inset 0 0 60px rgba(0,0,0,.35);
+    z-index: 5;
+  }
+
+  /* ---------- wipers ---------- */
+  .wiper {
+    position: absolute;
+    bottom: 42%;
+    width: 6px;
+    height: 34vh;
+    background: #222;
+    border-radius: 4px;
+    transform-origin: bottom center;
+    transform: rotate(-72deg);
+    z-index: 6;
+    pointer-events: none;
+    transition: transform .4s ease-in-out;
+  }
+  .wiper::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -3px;
+    width: 12px; height: 70%;
+    background: #333;
+    border-radius: 6px;
+  }
+  #wiperL { left: 26%; }
+  #wiperR { left: 60%; }
+  .wiping .wiper { animation: wipe 1.1s ease-in-out infinite alternate; }
+  #wiperR.wiper { animation-delay: .06s; }
+  @keyframes wipe {
+    from { transform: rotate(-62deg); }
+    to   { transform: rotate(58deg); }
+  }
+
+  /* ---------- dashboard ---------- */
+  #dashboard {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 42%;
+    background:
+      radial-gradient(120% 90% at 50% -10%, var(--dash) 60%, var(--dash-dark) 100%);
+    border-top: 14px solid var(--dash-deep);
+    border-radius: 46px 46px 0 0;
+    z-index: 10;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 2vh 2vw;
+    gap: 1vw;
+  }
+
+  .cluster {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2vh;
+  }
+
+  /* ---------- gauges ---------- */
+  #gauges { flex: 0 0 20%; }
+  .gauge {
+    position: relative;
+    width: 15vh; height: 15vh;
+    background: var(--cream);
+    border: 6px solid var(--dash-deep);
+    border-radius: 50%;
+    box-shadow: inset 0 3px 8px rgba(0,0,0,.2);
+  }
+  .gauge .ticks { position: absolute; inset: 0; }
+  .gauge .needle {
+    position: absolute;
+    left: 50%; bottom: 50%;
+    width: 5px; height: 42%;
+    background: #e0342b;
+    border-radius: 3px;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(-110deg);
+    transition: transform .25s;
+  }
+  .gauge .hub {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 16px; height: 16px;
+    background: var(--dash-deep);
+    border-radius: 50%;
+    transform: translate(-50%,-50%);
+  }
+  .gauge .glabel {
+    position: absolute;
+    left: 0; right: 0; bottom: 14%;
+    text-align: center;
+    font-size: 1.6vh;
+    font-weight: 700;
+    color: var(--dash-deep);
+  }
+  #speedNum {
+    font-size: 3.2vh;
+    font-weight: 800;
+    color: var(--cream);
+    background: var(--dash-deep);
+    padding: .2vh 1.6vh;
+    border-radius: 10px;
+    min-width: 9vh;
+    text-align: center;
+  }
+
+  /* ---------- steering wheel ---------- */
+  #wheelZone {
+    flex: 0 0 34%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    position: relative;
+  }
+  #wheel {
+    position: relative;
+    width: 34vh; height: 34vh;
+    margin-top: -8vh;
+    cursor: grab;
+    touch-action: none;
+    filter: drop-shadow(0 8px 6px rgba(0,0,0,.35));
+  }
+  #wheel:active { cursor: grabbing; }
+  #wheel .rim {
+    position: absolute; inset: 0;
+    border: 3.4vh solid #35322e;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: inset 0 0 0 6px #211f1c;
+  }
+  #wheel .spoke {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 3vh; height: 15vh;
+    background: #35322e;
+    border-radius: 8px;
+    transform-origin: top center;
+  }
+  #wheel .spoke.s1 { transform: translate(-50%,0) rotate(115deg); }
+  #wheel .spoke.s2 { transform: translate(-50%,0) rotate(-115deg); }
+  #wheel .spoke.s3 { transform: translate(-50%,0) rotate(0deg); }
+  #horn {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 13vh; height: 13vh;
+    transform: translate(-50%,-50%);
+    border-radius: 50%;
+    border: none;
+    background: radial-gradient(circle at 35% 30%, #1d8a6b, #0b3d33);
+    font-size: 5vh;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #052019, inset 0 0 0 5px #7fd4bc;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #fff;
+    font-family: inherit;
+    gap: .2vh;
+  }
+  #horn .brand {
+    font-size: 2.2vh;
+    font-weight: 800;
+    letter-spacing: .14em;
+    color: #d9f4ea;
+  }
+  #brandLogo { width: 5.4vh; height: 5.4vh; color: #fff; display: block; }
+  #brandLogo svg { width: 100%; height: 100%; }
+  #horn:active { transform: translate(-50%,-50%) scale(.92); box-shadow: 0 1px 0 #052019, inset 0 0 0 5px #7fd4bc; }
+
+  /* ---------- buttons panel ---------- */
+  #buttons {
+    flex: 0 0 24%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: min-content;
+    gap: 1.4vh;
+    align-content: center;
+    justify-items: center;
+  }
+  .btn {
+    width: 9.5vh; height: 9.5vh;
+    border-radius: 22px;
+    border: none;
+    background: var(--panel);
+    box-shadow: var(--btn-shadow);
+    font-size: 4.2vh;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .2vh;
+    transition: transform .08s, background .2s;
+    font-family: inherit;
+  }
+  .btn small { font-size: 1.4vh; font-weight: 700; color: #7a5b2e; }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+  .btn.on {
+    background: #ffd23f;
+    box-shadow: 0 5px 0 #b97a10, 0 0 22px 4px rgba(255,210,63,.8);
+  }
+  #startBtn {
+    background: radial-gradient(circle at 35% 30%, #ff6b57, #d92b1a);
+    color: #fff;
+    border-radius: 50%;
+  }
+  #startBtn small { color: #ffd9d3; }
+  #startBtn.on {
+    background: radial-gradient(circle at 35% 30%, #7bf07b, #1caf3c);
+    box-shadow: 0 5px 0 #0d7a26, 0 0 22px 4px rgba(80,240,120,.7);
+  }
+  #startBtn.on small { color: #dcffe3; }
+  .btn.blink.on { animation: blinkbtn .8s step-start infinite; }
+  @keyframes blinkbtn { 50% { background: var(--panel); box-shadow: var(--btn-shadow); } }
+
+  /* ---------- sticks ---------- */
+  #sticks {
+    flex: 0 0 18%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2.6vw;
+  }
+  .stick-wrap { position: relative; }
+  .stick-base {
+    position: relative;
+    width: 8vh;
+    height: 26vh;
+    background: var(--dash-deep);
+    border-radius: 18px;
+    box-shadow: inset 0 4px 10px rgba(0,0,0,.5);
+  }
+  .stick-base .slot {
+    position: absolute;
+    left: 50%;
+    top: 8%;
+    bottom: 8%;
+    width: 12px;
+    transform: translateX(-50%);
+    background: #111;
+    border-radius: 8px;
+  }
+  .gear-labels {
+    position: absolute;
+    left: -3.2vh;
+    top: 6%;
+    bottom: 6%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-weight: 800;
+    font-size: 2.4vh;
+    color: var(--cream);
+  }
+  .gear-labels span.active { color: #ffd23f; text-shadow: 0 0 8px #ffd23f; }
+  .knob {
+    position: absolute;
+    left: 50%;
+    width: 9vh;
+    height: 9vh;
+    transform: translate(-50%,-50%);
+    border-radius: 50%;
+    cursor: grab;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 3.4vh;
+    box-shadow: 0 5px 4px rgba(0,0,0,.4);
+    z-index: 2;
+  }
+  .knob:active { cursor: grabbing; }
+  #gearKnob { background: radial-gradient(circle at 35% 30%, #6ec6ff, #1976d2); color: #fff; top: 8%; }
+  #brakeKnob { background: radial-gradient(circle at 35% 30%, #ffb74d, #ef6c00); color: #fff; top: 92%; font-size: 4vh; }
+  .stick-label {
+    position: absolute;
+    bottom: -3.4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.6vh;
+    font-weight: 700;
+    color: var(--cream);
+    white-space: nowrap;
+  }
+
+  /* ---------- pedals ---------- */
+  #pedals {
+    position: absolute;
+    left: 40%;
+    transform: translateX(-50%);
+    bottom: 1vh;
+    display: flex;
+    gap: 2.5vw;
+    z-index: 20;
+  }
+  .pedal {
+    width: 13vh;
+    height: 15vh;
+    border: none;
+    border-radius: 18px 18px 26px 26px;
+    font-family: inherit;
+    font-size: 2.6vh;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 7px 0 rgba(0,0,0,.35);
+    transition: transform .08s;
+    touch-action: none;
+    color: #fff;
+  }
+  .pedal span { font-size: 4.6vh; display: block; }
+  #gas { background: linear-gradient(#43c94f, #1e8f2a); }
+  #brake { background: linear-gradient(#f25555, #bf2222); }
+  .pedal.pressed { transform: translateY(6px); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+
+  /* ---------- title ---------- */
+  #title {
+    position: absolute;
+    top: 2.6vh;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    font-size: 4.6vh;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 3px 0 rgba(0,0,0,.35), 0 0 24px rgba(255,210,63,.5);
+    background: rgba(217,79,48,.85);
+    border: 4px solid var(--cream);
+    padding: .4vh 3vh;
+    border-radius: 20px;
+    z-index: 7;
+    pointer-events: none;
+    letter-spacing: .05em;
+  }
+
+  /* ---------- Blixten the dalmatian ---------- */
+  #blixten {
+    position: absolute;
+    left: 5%;
+    bottom: 34vh;
+    width: 22vh;
+    height: 26vh;
+    z-index: 9;
+    cursor: pointer;
+    transition: transform .2s;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  #blixten img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-1.4vh) rotate(2deg); }
+  }
+  #blixten.bark { animation: jump .5s ease; }
+  @keyframes jump {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6vh) rotate(-6deg); }
+  }
+  #blixten img { filter: drop-shadow(0 4px 4px rgba(0,0,0,.3)); }
+  #woof {
+    position: absolute;
+    left: 20%;
+    bottom: 52vh;
+    background: #fff;
+    color: #222;
+    font-weight: 800;
+    font-size: 3vh;
+    padding: 1vh 2.4vh;
+    border-radius: 18px;
+    border: 4px solid #222;
+    z-index: 12;
+    opacity: 0;
+    transform: scale(.5);
+    transition: opacity .15s, transform .15s;
+    pointer-events: none;
+  }
+  #woof.show { opacity: 1; transform: scale(1) rotate(-4deg); }
+  #woof::after {
+    content: "";
+    position: absolute;
+    bottom: -14px;
+    left: 24px;
+    border: 10px solid transparent;
+    border-top-color: #222;
+  }
+
+  /* ---------- Flash the fire truck ---------- */
+  #flash {
+    position: absolute;
+    left: 50%;
+    bottom: 39vh;
+    width: 24vh;
+    height: 17vh;
+    transform: translateX(-58%);
+    z-index: 4;
+    cursor: pointer;
+    animation: truckbob 1.6s ease-in-out infinite;
+  }
+  @keyframes truckbob {
+    0%, 100% { transform: translateX(-58%) translateY(0); }
+    50% { transform: translateX(-58%) translateY(-.8vh); }
+  }
+  #flash img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    filter: drop-shadow(0 3px 3px rgba(0,0,0,.35));
+  }
+  #flash.siren img { animation: sirenflash .3s step-start infinite; }
+  @keyframes sirenflash {
+    0%, 100% { filter: drop-shadow(0 0 18px #ff3030) drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
+    50% { filter: drop-shadow(0 0 18px #3060ff) drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
+  }
+
+  /* ---------- brand selector ---------- */
+  #brandWrap {
+    position: absolute;
+    top: 3vh;
+    right: 3vw;
+    z-index: 7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .4vh;
+  }
+  #brandWrap label {
+    font-size: 1.4vh;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 0 rgba(0,0,0,.35);
+    letter-spacing: .08em;
+  }
+  #brandSel {
+    font-family: inherit;
+    font-size: 1.9vh;
+    font-weight: 700;
+    padding: .6vh 1.4vh;
+    border-radius: 12px;
+    border: 3px solid var(--cream);
+    background: rgba(217,79,48,.9);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,.3);
+  }
+
+  #blinkArrowL, #blinkArrowR {
+    position: absolute;
+    top: 3.4vh;
+    font-size: 5vh;
+    z-index: 7;
+    opacity: 0;
+    color: #3ee83e;
+    text-shadow: 0 0 14px #3ee83e;
+    pointer-events: none;
+  }
+  #blinkArrowL { left: 5vw; }
+  #blinkArrowR { right: 5vw; }
+  .blinking { animation: blinkarrow .8s step-start infinite; }
+  @keyframes blinkarrow { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="sky"></canvas>
+  <div id="frame"></div>
+  <div id="title">🚗 Ossians bil</div>
+  <div id="brandWrap">
+    <label for="brandSel">MÄRKE</label>
+    <select id="brandSel"></select>
+  </div>
+  <div id="blinkArrowL">⬅⬅⬅</div>
+  <div id="blinkArrowR">➡➡➡</div>
+  <div id="wiperL" class="wiper"></div>
+  <div id="wiperR" class="wiper"></div>
+
+  <div id="blixten" title="Blixten">
+    <img src="blixten.webp" alt="Blixten" draggable="false">
+  </div>
+  <div id="flash" title="Flash">
+    <img src="flash.png" alt="Flash" draggable="false">
+  </div>
+  <div id="woof">VOFF! 🐾</div>
+
+  <div id="dashboard">
+    <div id="gauges" class="cluster">
+      <div class="gauge">
+        <div class="ticks"></div>
+        <div class="needle" id="needle"></div>
+        <div class="hub"></div>
+        <div class="glabel">km/h</div>
+      </div>
+      <div id="speedNum">0</div>
+    </div>
+
+    <div id="wheelZone">
+      <div id="wheel">
+        <div class="rim"></div>
+        <div class="spoke s1"></div>
+        <div class="spoke s2"></div>
+        <div class="spoke s3"></div>
+        <button id="horn" title="Tuta"><span id="brandLogo"></span><span class="brand" id="brandName">ŠKODA</span></button>
+      </div>
+    </div>
+
+    <div id="buttons" class="cluster">
+      <button class="btn" id="startBtn"><span>🔑</span><small>START</small></button>
+      <button class="btn" id="lightsBtn"><span>💡</span><small>LJUS</small></button>
+      <button class="btn" id="rainBtn"><span>🌧️</span><small>REGN</small></button>
+      <button class="btn blink" id="blinkL"><span>⬅️</span><small>BLINK</small></button>
+      <button class="btn" id="wiperBtn"><span>🧹</span><small>TORKARE</small></button>
+      <button class="btn blink" id="blinkR"><span>➡️</span><small>BLINK</small></button>
+      <button class="btn" id="musicBtn"><span>🎵</span><small>RADIO</small></button>
+      <button class="btn" id="nightBtn"><span>🌙</span><small>NATT</small></button>
+      <button class="btn" id="turboBtn"><span>🚀</span><small>TURBO</small></button>
+    </div>
+
+    <div id="sticks" class="cluster">
+      <div class="stick-base" id="gearBase">
+        <div class="gear-labels"><span>P</span><span>R</span><span>N</span><span>D</span></div>
+        <div class="slot"></div>
+        <div class="knob" id="gearKnob">P</div>
+        <div class="stick-label">VÄXEL</div>
+      </div>
+      <div class="stick-base" id="brakeBase">
+        <div class="slot"></div>
+        <div class="knob" id="brakeKnob">✋</div>
+        <div class="stick-label">HANDBROMS</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pedals">
+    <button class="pedal" id="brake"><span>🛑</span>BROMS</button>
+    <button class="pedal" id="gas"><span>💨</span>GAS</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============ state ============ */
+const S = {
+  engineOn: false,
+  speed: 0,          // km/h
+  gear: "P",         // P R N D
+  gas: false,
+  brake: false,
+  handbrake: false,  // starts released
+  wheelAngle: 0,     // degrees, ±270
+  lights: false,
+  night: false,
+  rain: false,
+  wipers: false,
+  music: false,
+  turbo: false,
+  blinkL: false,
+  blinkR: false,
+  distance: 0,
+  curve: 0,          // current road curve
+  targetCurve: 0,
+  carX: 0,           // -1 .. 1 position on road
+  rainDrops: [],
+};
+
+const MAXSPEED = 120;
+
+/* ============ audio ============ */
+let AC = null;
+let engineOsc = null, engineGain = null, engineFilter = null;
+let musicTimer = null;
+
+function audio() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+
+function beep(freq, dur, type = "square", vol = 0.15, when = 0) {
+  const ac = audio();
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, ac.currentTime + when);
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + when + dur);
+  o.connect(g).connect(ac.destination);
+  o.start(ac.currentTime + when);
+  o.stop(ac.currentTime + when + dur + 0.05);
+}
+
+function hornSound() {
+  beep(310, 0.5, "square", 0.14);
+  beep(415, 0.5, "square", 0.14);
+}
+
+function clickSound() { beep(900, 0.06, "square", 0.06); }
+function tickSound() { beep(1400, 0.03, "square", 0.05); }
+
+function startEngineSound() {
+  const ac = audio();
+  beep(70, 0.5, "sawtooth", 0.25);
+  beep(100, 0.4, "sawtooth", 0.2, 0.15);
+  engineOsc = ac.createOscillator();
+  engineGain = ac.createGain();
+  engineFilter = ac.createBiquadFilter();
+  engineFilter.type = "lowpass";
+  engineFilter.frequency.value = 300;
+  engineOsc.type = "sawtooth";
+  engineOsc.frequency.value = 55;
+  engineGain.gain.value = 0;
+  engineOsc.connect(engineFilter).connect(engineGain).connect(ac.destination);
+  engineOsc.start();
+  engineGain.gain.linearRampToValueAtTime(0.08, ac.currentTime + 0.6);
+}
+
+function stopEngineSound() {
+  if (!engineOsc) return;
+  const ac = audio();
+  engineGain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.4);
+  engineOsc.stop(ac.currentTime + 0.5);
+  engineOsc = null;
+}
+
+const MELODY = [262, 262, 392, 392, 440, 440, 392, 0, 349, 349, 330, 330, 294, 294, 262, 0];
+let melodyIdx = 0;
+function startMusic() {
+  melodyIdx = 0;
+  musicTimer = setInterval(() => {
+    const n = MELODY[melodyIdx % MELODY.length];
+    if (n) beep(n, 0.22, "triangle", 0.12);
+    melodyIdx++;
+  }, 280);
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+/* ============ steering wheel ============ */
+const wheel = document.getElementById("wheel");
+let wheelDrag = null;
+
+function wheelCenter() {
+  const r = wheel.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+function pointerAngle(e) {
+  const c = wheelCenter();
+  return Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180 / Math.PI;
+}
+
+wheel.addEventListener("pointerdown", e => {
+  if (e.target.id === "horn") return;
+  wheel.setPointerCapture(e.pointerId);
+  wheelDrag = { last: pointerAngle(e) };
+});
+wheel.addEventListener("pointermove", e => {
+  if (!wheelDrag) return;
+  const a = pointerAngle(e);
+  let d = a - wheelDrag.last;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  wheelDrag.last = a;
+  S.wheelAngle = Math.max(-270, Math.min(270, S.wheelAngle + d));
+});
+const endWheel = () => { wheelDrag = null; };
+wheel.addEventListener("pointerup", endWheel);
+wheel.addEventListener("pointercancel", endWheel);
+
+/* ============ brand logos (simplified, monochrome) ============ */
+const LOGOS = {
+  "ŠKODA": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M26 66 Q38 34 74 34 L52 46 L66 46 L40 66 Z" fill="currentColor"/><circle cx="36" cy="44" r="4" fill="currentColor"/></svg>`,
+  "VOLVO": `<svg viewBox="0 0 100 100"><circle cx="50" cy="54" r="34" fill="none" stroke="currentColor" stroke-width="8"/><path d="M72 32 L88 16 M88 16 H72 M88 16 V32" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/></svg>`,
+  "POLESTAR": `<svg viewBox="0 0 100 100"><path d="M50 2 L58 42 L98 50 L58 58 L50 98 L42 58 L2 50 L42 42 Z" fill="currentColor"/></svg>`,
+  "SAAB": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M28 62 Q30 38 52 36 Q66 35 70 44 L60 48 Q56 42 48 44 Q38 46 40 62 Z" fill="currentColor"/><circle cx="62" cy="54" r="3.5" fill="currentColor"/></svg>`,
+  "TESLA": `<svg viewBox="0 0 100 100"><path d="M18 26 Q50 16 82 26 L74 40 Q68 34 56 33 L53 84 H47 L44 33 Q32 34 26 40 Z" fill="currentColor"/></svg>`,
+  "BMW": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M50 50 V14 A36 36 0 0 1 86 50 Z" fill="currentColor"/><path d="M50 50 H14 A36 36 0 0 0 50 86 Z" fill="currentColor"/></svg>`,
+  "MERCEDES": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/><path d="M50 50 L50 10 M50 50 L15 72 M50 50 L85 72" stroke="currentColor" stroke-width="9" stroke-linecap="round"/></svg>`,
+  "AUDI": `<svg viewBox="0 0 100 100"><g fill="none" stroke="currentColor" stroke-width="6"><circle cx="20" cy="50" r="15"/><circle cx="40" cy="50" r="15"/><circle cx="60" cy="50" r="15"/><circle cx="80" cy="50" r="15"/></g></svg>`,
+  "VOLKSWAGEN": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="7"/><path d="M22 26 L34 26 L50 62 L66 26 L78 26 L56 78 L44 78 Z M38 26 L50 50 L62 26" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg>`,
+  "TOYOTA": `<svg viewBox="0 0 100 100"><g fill="none" stroke="currentColor" stroke-width="6"><ellipse cx="50" cy="50" rx="42" ry="27"/><ellipse cx="50" cy="50" rx="13" ry="27"/><ellipse cx="50" cy="37" rx="28" ry="11"/></g></svg>`,
+  "PORSCHE": `<svg viewBox="0 0 100 100"><path d="M50 8 L84 18 V52 Q84 80 50 94 Q16 80 16 52 V18 Z" fill="none" stroke="currentColor" stroke-width="7"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="currentColor" font-family="sans-serif">P</text></svg>`,
+  "FERRARI": `<svg viewBox="0 0 100 100"><path d="M30 8 H70 V58 Q70 82 50 92 Q30 82 30 58 Z" fill="none" stroke="currentColor" stroke-width="7"/><text x="50" y="62" text-anchor="middle" font-size="32" font-weight="800" font-style="italic" fill="currentColor" font-family="sans-serif">SF</text></svg>`,
+};
+
+/* ============ brand selector ============ */
+const BRANDS = [
+  { name: "ŠKODA",      c1: "#1d8a6b", c2: "#0b3d33", ring: "#7fd4bc" },
+  { name: "VOLVO",      c1: "#2a4f8f", c2: "#0d1f42", ring: "#9db8e8" },
+  { name: "POLESTAR",   c1: "#3a3d41", c2: "#141517", ring: "#d5b26a" },
+  { name: "SAAB",       c1: "#7a90a8", c2: "#2c3a4a", ring: "#cfdce8" },
+  { name: "TESLA",      c1: "#c8342a", c2: "#5e120c", ring: "#ffb3ab" },
+  { name: "BMW",        c1: "#2f7fd4", c2: "#0e2f56", ring: "#aad2f5" },
+  { name: "MERCEDES",   c1: "#8f979e", c2: "#3a4046", ring: "#e2e8ee" },
+  { name: "AUDI",       c1: "#b01e3c", c2: "#4a0a18", ring: "#f2a9ba" },
+  { name: "VOLKSWAGEN", c1: "#27529e", c2: "#0a1e42", ring: "#a4c0ee" },
+  { name: "TOYOTA",     c1: "#d64545", c2: "#5c1414", ring: "#f5b3b3" },
+  { name: "PORSCHE",    c1: "#b8964a", c2: "#4e3c14", ring: "#ecd9a8" },
+  { name: "FERRARI",    c1: "#e03a2f", c2: "#701410", ring: "#ffd23f" },
+];
+const brandSel = document.getElementById("brandSel");
+const brandName = document.getElementById("brandName");
+const hornEl = document.getElementById("horn");
+BRANDS.forEach(b => {
+  const o = document.createElement("option");
+  o.value = b.name;
+  o.textContent = b.name;
+  brandSel.appendChild(o);
+});
+function applyBrand(name) {
+  const b = BRANDS.find(x => x.name === name) || BRANDS[0];
+  brandName.textContent = b.name;
+  brandName.style.fontSize = b.name.length > 8 ? "1.3vh" : b.name.length > 6 ? "1.7vh" : "2.2vh";
+  document.getElementById("brandLogo").innerHTML = LOGOS[b.name];
+  hornEl.style.background = `radial-gradient(circle at 35% 30%, ${b.c1}, ${b.c2})`;
+  hornEl.style.boxShadow = `0 4px 0 ${b.c2}, inset 0 0 0 5px ${b.ring}`;
+  brandSel.value = b.name;
+  localStorage.setItem("ossian-brand", b.name);
+}
+brandSel.addEventListener("change", () => { applyBrand(brandSel.value); clickSound(); });
+applyBrand(localStorage.getItem("ossian-brand") || "ŠKODA");
+
+/* ============ Blixten ============ */
+const blixten = document.getElementById("blixten");
+const woof = document.getElementById("woof");
+let woofTimer = null;
+
+function barkSound() {
+  beep(480, 0.09, "square", 0.18);
+  beep(300, 0.14, "sawtooth", 0.15, 0.02);
+  beep(500, 0.09, "square", 0.18, 0.22);
+  beep(320, 0.14, "sawtooth", 0.15, 0.24);
+}
+
+function blixtenBark() {
+  barkSound();
+  blixten.classList.remove("bark");
+  void blixten.offsetWidth;
+  blixten.classList.add("bark");
+  woof.classList.add("show");
+  clearTimeout(woofTimer);
+  woofTimer = setTimeout(() => woof.classList.remove("show"), 900);
+}
+blixten.addEventListener("pointerdown", blixtenBark);
+
+/* ============ Flash ============ */
+const flash = document.getElementById("flash");
+let sirenTimer = null;
+
+function sirenSound() {
+  for (let i = 0; i < 3; i++) {
+    beep(720, 0.32, "sawtooth", 0.11, i * 0.7);
+    beep(520, 0.32, "sawtooth", 0.11, i * 0.7 + 0.35);
+  }
+}
+
+flash.addEventListener("pointerdown", () => {
+  sirenSound();
+  flash.classList.add("siren");
+  clearTimeout(sirenTimer);
+  sirenTimer = setTimeout(() => flash.classList.remove("siren"), 2200);
+});
+
+/* ============ horn ============ */
+document.getElementById("horn").addEventListener("pointerdown", e => {
+  e.stopPropagation();
+  hornSound();
+  setTimeout(blixtenBark, 550);
+});
+
+/* ============ toggle buttons ============ */
+function toggleBtn(id, key, extra) {
+  const el = document.getElementById(id);
+  el.addEventListener("click", () => {
+    S[key] = !S[key];
+    el.classList.toggle("on", S[key]);
+    clickSound();
+    if (extra) extra(S[key]);
+  });
+  return el;
+}
+
+document.getElementById("startBtn").addEventListener("click", () => {
+  S.engineOn = !S.engineOn;
+  document.getElementById("startBtn").classList.toggle("on", S.engineOn);
+  if (S.engineOn) startEngineSound();
+  else stopEngineSound();
+});
+
+toggleBtn("lightsBtn", "lights");
+toggleBtn("nightBtn", "night");
+toggleBtn("rainBtn", "rain");
+toggleBtn("wiperBtn", "wipers", on => {
+  document.getElementById("game").classList.toggle("wiping", on);
+});
+toggleBtn("musicBtn", "music", on => on ? startMusic() : stopMusic());
+toggleBtn("turboBtn", "turbo");
+toggleBtn("blinkL", "blinkL", on => {
+  if (on) { S.blinkR = false; document.getElementById("blinkR").classList.remove("on"); }
+  document.getElementById("blinkArrowL").classList.toggle("blinking", on);
+  if (!on) document.getElementById("blinkArrowL").style.opacity = 0;
+  document.getElementById("blinkArrowR").classList.toggle("blinking", S.blinkR);
+});
+toggleBtn("blinkR", "blinkR", on => {
+  if (on) { S.blinkL = false; document.getElementById("blinkL").classList.remove("on"); document.getElementById("blinkArrowL").classList.remove("blinking"); }
+  document.getElementById("blinkArrowR").classList.toggle("blinking", on);
+  if (!on) document.getElementById("blinkArrowR").style.opacity = 0;
+});
+
+let blinkTickTimer = setInterval(() => {
+  if (S.blinkL || S.blinkR) tickSound();
+}, 800);
+
+/* ============ pedals ============ */
+function pedal(id, key) {
+  const el = document.getElementById(id);
+  const down = e => { e.preventDefault(); S[key] = true; el.classList.add("pressed"); };
+  const up = () => { S[key] = false; el.classList.remove("pressed"); };
+  el.addEventListener("pointerdown", down);
+  el.addEventListener("pointerup", up);
+  el.addEventListener("pointerleave", up);
+  el.addEventListener("pointercancel", up);
+}
+pedal("gas", "gas");
+pedal("brake", "brake");
+
+/* ============ gear stick ============ */
+const gearKnob = document.getElementById("gearKnob");
+const gearBase = document.getElementById("gearBase");
+const GEARS = ["P", "R", "N", "D"];
+const GEAR_POS = [8, 36, 64, 92]; // % from top
+
+function setGear(g) {
+  if (S.gear === g) return;
+  S.gear = g;
+  gearKnob.textContent = g;
+  gearKnob.style.top = GEAR_POS[GEARS.indexOf(g)] + "%";
+  clickSound();
+  document.querySelectorAll(".gear-labels span").forEach((s, i) =>
+    s.classList.toggle("active", GEARS[i] === g));
+}
+setGear.call(null, "P");
+document.querySelectorAll(".gear-labels span")[0].classList.add("active");
+
+let gearDrag = false;
+gearKnob.addEventListener("pointerdown", e => {
+  gearKnob.setPointerCapture(e.pointerId);
+  gearDrag = true;
+});
+gearKnob.addEventListener("pointermove", e => {
+  if (!gearDrag) return;
+  const r = gearBase.getBoundingClientRect();
+  const pct = ((e.clientY - r.top) / r.height) * 100;
+  let best = 0, bestDist = 1e9;
+  GEAR_POS.forEach((p, i) => {
+    const d = Math.abs(p - pct);
+    if (d < bestDist) { bestDist = d; best = i; }
+  });
+  setGear(GEARS[best]);
+});
+const endGear = () => { gearDrag = false; };
+gearKnob.addEventListener("pointerup", endGear);
+gearKnob.addEventListener("pointercancel", endGear);
+
+/* ============ handbrake ============ */
+const brakeKnob = document.getElementById("brakeKnob");
+const brakeBase = document.getElementById("brakeBase");
+let brakeDrag = false;
+function setHandbrake(on) {
+  S.handbrake = on;
+  brakeKnob.style.top = on ? "8%" : "92%";
+  brakeKnob.style.background = on
+    ? "radial-gradient(circle at 35% 30%, #ff7b6b, #d32f2f)"
+    : "radial-gradient(circle at 35% 30%, #ffb74d, #ef6c00)";
+}
+brakeKnob.addEventListener("pointerdown", e => {
+  brakeKnob.setPointerCapture(e.pointerId);
+  brakeDrag = true;
+});
+brakeKnob.addEventListener("pointermove", e => {
+  if (!brakeDrag) return;
+  const r = brakeBase.getBoundingClientRect();
+  const pct = ((e.clientY - r.top) / r.height) * 100;
+  const on = pct < 50;
+  if (on !== S.handbrake) { setHandbrake(on); clickSound(); }
+});
+const endBrake = () => { brakeDrag = false; };
+brakeKnob.addEventListener("pointerup", endBrake);
+brakeKnob.addEventListener("pointercancel", endBrake);
+
+/* ============ keyboard bonus controls ============ */
+addEventListener("keydown", e => {
+  if (e.repeat) return;
+  if (e.key === "ArrowUp") { S.gas = true; document.getElementById("gas").classList.add("pressed"); }
+  if (e.key === "ArrowDown") { S.brake = true; document.getElementById("brake").classList.add("pressed"); }
+  if (e.key === " ") hornSound();
+});
+addEventListener("keyup", e => {
+  if (e.key === "ArrowUp") { S.gas = false; document.getElementById("gas").classList.remove("pressed"); }
+  if (e.key === "ArrowDown") { S.brake = false; document.getElementById("brake").classList.remove("pressed"); }
+});
+addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") S.wheelAngle = Math.max(-270, S.wheelAngle - 30);
+  if (e.key === "ArrowRight") S.wheelAngle = Math.min(270, S.wheelAngle + 30);
+});
+
+/* ============ canvas world ============ */
+const cv = document.getElementById("sky");
+const cx = cv.getContext("2d");
+function resize() {
+  cv.width = innerWidth * devicePixelRatio;
+  cv.height = innerHeight * devicePixelRatio;
+  cx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+addEventListener("resize", resize);
+resize();
+
+const trees = [];
+for (let i = 0; i < 14; i++) {
+  trees.push({ z: Math.random(), side: Math.random() < 0.5 ? -1 : 1, kind: Math.floor(Math.random() * 3) });
+}
+const clouds = [];
+for (let i = 0; i < 5; i++) {
+  clouds.push({ x: Math.random(), y: 0.05 + Math.random() * 0.18, s: 0.6 + Math.random() * 0.8 });
+}
+
+const LIMITS = [30, 50, 70, 90, 110];
+let limitIdx = 1;
+const signs = [{ z: 0.35, limit: 50 }, { z: 0.85, limit: 70 }];
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function mixColor(day, night, t) {
+  const d = parseInt(day.slice(1), 16), n = parseInt(night.slice(1), 16);
+  const r = Math.round(lerp((d >> 16) & 255, (n >> 16) & 255, t));
+  const g = Math.round(lerp((d >> 8) & 255, (n >> 8) & 255, t));
+  const b = Math.round(lerp(d & 255, n & 255, t));
+  return `rgb(${r},${g},${b})`;
+}
+
+let nightT = 0;
+
+function drawWorld(dt, now) {
+  const W = innerWidth, H = innerHeight;
+  const horizon = H * 0.36;
+  nightT = lerp(nightT, S.night ? 1 : 0, dt * 2);
+
+  // sky
+  const sky = cx.createLinearGradient(0, 0, 0, horizon);
+  sky.addColorStop(0, mixColor("#4fb3e8", "#0b1030", nightT));
+  sky.addColorStop(1, mixColor("#bfe8ff", "#26315e", nightT));
+  cx.fillStyle = sky;
+  cx.fillRect(0, 0, W, horizon + 2);
+
+  // sun / moon
+  cx.beginPath();
+  cx.arc(W * 0.78, horizon * 0.42, 34, 0, 7);
+  cx.fillStyle = nightT > 0.5 ? "#f4f1de" : "#ffd23f";
+  cx.shadowColor = nightT > 0.5 ? "#f4f1de" : "#ffd23f";
+  cx.shadowBlur = 40;
+  cx.fill();
+  cx.shadowBlur = 0;
+
+  // stars
+  if (nightT > 0.3) {
+    cx.fillStyle = `rgba(255,255,255,${(nightT - 0.3) * 1.2})`;
+    for (let i = 0; i < 40; i++) {
+      const sx = ((i * 137.5) % W);
+      const sy = ((i * 91.3) % (horizon * 0.9));
+      const tw = Math.sin(now / 400 + i) > 0.4 ? 2 : 1.2;
+      cx.fillRect(sx, sy, tw, tw);
+    }
+  }
+
+  // clouds
+  clouds.forEach(c => {
+    c.x += dt * 0.008 * c.s;
+    if (c.x > 1.2) c.x = -0.2;
+    const cxp = c.x * W, cyp = c.y * H;
+    cx.fillStyle = `rgba(255,255,255,${lerp(0.9, 0.25, nightT)})`;
+    cx.beginPath();
+    cx.arc(cxp, cyp, 26 * c.s, 0, 7);
+    cx.arc(cxp + 28 * c.s, cyp + 6 * c.s, 20 * c.s, 0, 7);
+    cx.arc(cxp - 28 * c.s, cyp + 8 * c.s, 18 * c.s, 0, 7);
+    cx.fill();
+  });
+
+  // hills
+  cx.fillStyle = mixColor("#7ec850", "#1d3a24", nightT);
+  cx.beginPath();
+  cx.moveTo(0, horizon);
+  for (let x = 0; x <= W; x += 20) {
+    cx.lineTo(x, horizon - 26 * Math.sin(x / 190 + 1) - 14 * Math.sin(x / 61));
+  }
+  cx.lineTo(W, horizon);
+  cx.fill();
+
+  // grass
+  cx.fillStyle = mixColor("#8fd964", "#22482b", nightT);
+  cx.fillRect(0, horizon, W, H - horizon);
+
+  // ---- road ----
+  const roadBottomW = W * 0.85;
+  const roadTopW = W * 0.04;
+  const steer = S.wheelAngle / 270; // -1..1
+  S.targetCurve = steer * 1.4;
+  S.curve = lerp(S.curve, S.targetCurve, dt * 3);
+
+  const dashH = H * 0.42; // dashboard covers bottom
+  const roadH = (H - dashH) - horizon;
+  const bottomY = H - dashH + 30;
+
+  const segs = 24;
+  const pts = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;                 // 0 bottom → 1 horizon
+    const y = bottomY - roadH * t - 30 * t;
+    const w = lerp(roadBottomW, roadTopW, Math.pow(t, 1.15));
+    const xoff = S.curve * Math.pow(t, 2) * W * 0.45 - S.carX * (1 - t) * W * 0.18;
+    pts.push({ y, w, x: W / 2 + xoff });
+  }
+
+  cx.fillStyle = mixColor("#5b5f6b", "#33363f", nightT);
+  cx.beginPath();
+  cx.moveTo(pts[0].x - pts[0].w / 2, pts[0].y);
+  pts.forEach(p => cx.lineTo(p.x - p.w / 2, p.y));
+  for (let i = pts.length - 1; i >= 0; i--) cx.lineTo(pts[i].x + pts[i].w / 2, pts[i].y);
+  cx.fill();
+
+  // road edges
+  cx.strokeStyle = mixColor("#f4f1de", "#8a8778", nightT);
+  cx.lineWidth = 4;
+  [-1, 1].forEach(s => {
+    cx.beginPath();
+    pts.forEach((p, i) => i ? cx.lineTo(p.x + s * p.w / 2, p.y) : cx.moveTo(p.x + s * p.w / 2, p.y));
+    cx.stroke();
+  });
+
+  // center dashes, scroll with distance
+  cx.strokeStyle = "#ffd23f";
+  const dashPhase = (S.distance * 0.06) % 1;
+  for (let i = 0; i < segs; i++) {
+    const t0 = i / segs, t1 = (i + 0.5) / segs;
+    const on = Math.floor((t0 * 8 + dashPhase * 8)) % 2 === 0;
+    if (!on) continue;
+    const p0 = pts[i], p1 = pts[Math.min(i + 1, segs)];
+    cx.lineWidth = lerp(7, 1.5, t0);
+    cx.beginPath();
+    cx.moveTo(p0.x, p0.y);
+    cx.lineTo(lerp(p0.x, p1.x, 0.5), lerp(p0.y, p1.y, 0.5));
+    cx.stroke();
+  }
+
+  // trees & houses scroll toward viewer
+  trees.forEach(tr => {
+    tr.z -= dt * S.speed * 0.004 * (S.gear === "R" ? -1 : 1);
+    if (tr.z < 0) { tr.z += 1; tr.side = Math.random() < 0.5 ? -1 : 1; tr.kind = Math.floor(Math.random() * 3); }
+    if (tr.z > 1) { tr.z -= 1; }
+    const t = 1 - tr.z; // 0 at horizon → 1 near
+    const i = Math.min(segs, Math.round(lerp(segs, 0, tr.z)));
+    const p = pts[i];
+    const px = p.x + tr.side * (p.w / 2 + lerp(10, 130, t));
+    const py = p.y;
+    const s = lerp(0.1, 1.4, Math.pow(t, 1.6));
+    drawThing(px, py, s, tr.kind, now);
+  });
+
+  // speed limit signs (right side, Swedish style)
+  signs.forEach(sg => {
+    sg.z -= dt * S.speed * 0.004 * (S.gear === "R" ? -1 : 1);
+    if (sg.z < 0) {
+      sg.z += 1;
+      limitIdx = (limitIdx + 1) % LIMITS.length;
+      sg.limit = LIMITS[limitIdx];
+    }
+    if (sg.z > 1) sg.z -= 1;
+    const t = 1 - sg.z;
+    const i = Math.min(segs, Math.round(lerp(segs, 0, sg.z)));
+    const p = pts[i];
+    const px = p.x + p.w / 2 + lerp(8, 90, t);
+    const s = lerp(0.12, 1.5, Math.pow(t, 1.6));
+    drawSign(px, p.y, s, sg.limit);
+  });
+
+  // headlight glow
+  if (S.lights) {
+    const glow = cx.createRadialGradient(W / 2, bottomY, 40, W / 2, horizon, W * 0.55);
+    glow.addColorStop(0, `rgba(255,240,160,${lerp(0.12, 0.3, nightT)})`);
+    glow.addColorStop(1, "rgba(255,240,160,0)");
+    cx.fillStyle = glow;
+    cx.beginPath();
+    cx.moveTo(W / 2 - roadBottomW * 0.3, bottomY + 40);
+    cx.lineTo(pts[segs].x - 60, horizon);
+    cx.lineTo(pts[segs].x + 60, horizon);
+    cx.lineTo(W / 2 + roadBottomW * 0.3, bottomY + 40);
+    cx.fill();
+  }
+
+  // night dimming overlay
+  if (nightT > 0.01) {
+    cx.fillStyle = `rgba(5,8,25,${nightT * (S.lights ? 0.18 : 0.34)})`;
+    cx.fillRect(0, horizon, W, H - horizon);
+  }
+
+  // rain
+  if (S.rain) {
+    if (S.rainDrops.length < 120) {
+      for (let i = 0; i < 6; i++) S.rainDrops.push({ x: Math.random() * W, y: Math.random() * H * 0.6, v: 400 + Math.random() * 300 });
+    }
+    cx.strokeStyle = "rgba(180,210,255,.55)";
+    cx.lineWidth = 2;
+    S.rainDrops.forEach(d => {
+      d.y += d.v * dt;
+      d.x -= 60 * dt;
+      if (d.y > H * 0.62) { d.y = -10; d.x = Math.random() * W; }
+      cx.beginPath();
+      cx.moveTo(d.x, d.y);
+      cx.lineTo(d.x - 4, d.y + 14);
+      cx.stroke();
+    });
+    // misty windshield if wipers off
+    if (!S.wipers) {
+      cx.fillStyle = "rgba(190,215,235,.16)";
+      cx.fillRect(0, 0, W, H * 0.62);
+    }
+  } else {
+    S.rainDrops.length = 0;
+  }
+
+  // turbo speed lines
+  if (S.turbo && S.speed > 30) {
+    cx.strokeStyle = "rgba(255,255,255,.5)";
+    cx.lineWidth = 3;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + now / 300;
+      const r1 = 120 + (now / 4 + i * 47) % 200;
+      const cxp = W / 2, cyp = horizon + 40;
+      cx.beginPath();
+      cx.moveTo(cxp + Math.cos(a) * r1, cyp + Math.sin(a) * r1 * 0.5);
+      cx.lineTo(cxp + Math.cos(a) * (r1 + 50), cyp + Math.sin(a) * (r1 + 50) * 0.5);
+      cx.stroke();
+    }
+  }
+}
+
+function drawSign(x, y, s, limit) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s, s);
+  cx.fillStyle = mixColor("#9aa0a6", "#4a4e55", nightT);
+  cx.fillRect(-3, -60, 6, 60);
+  cx.beginPath();
+  cx.arc(0, -82, 26, 0, 7);
+  cx.fillStyle = mixColor("#cf2b1d", "#6e1710", nightT);
+  cx.fill();
+  cx.beginPath();
+  cx.arc(0, -82, 19, 0, 7);
+  cx.fillStyle = mixColor("#ffcd00", "#8a7000", nightT);
+  cx.fill();
+  cx.fillStyle = "#1a1a1a";
+  cx.font = "700 19px 'Baloo 2', 'Comic Sans MS', sans-serif";
+  cx.textAlign = "center";
+  cx.textBaseline = "middle";
+  cx.fillText(limit, 0, -81);
+  cx.restore();
+}
+
+function drawThing(x, y, s, kind, now) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s, s);
+  if (kind === 0) { // tree
+    cx.fillStyle = mixColor("#8a5a2b", "#4a3018", nightT);
+    cx.fillRect(-6, -34, 12, 34);
+    cx.fillStyle = mixColor("#3e9e3e", "#17421c", nightT);
+    cx.beginPath();
+    cx.arc(0, -52, 30, 0, 7);
+    cx.arc(-20, -38, 20, 0, 7);
+    cx.arc(20, -38, 20, 0, 7);
+    cx.fill();
+  } else if (kind === 1) { // house
+    cx.fillStyle = mixColor("#f2c14e", "#6b5626", nightT);
+    cx.fillRect(-30, -46, 60, 46);
+    cx.fillStyle = mixColor("#d94f30", "#5e2314", nightT);
+    cx.beginPath();
+    cx.moveTo(-36, -46); cx.lineTo(0, -76); cx.lineTo(36, -46);
+    cx.fill();
+    cx.fillStyle = nightT > 0.4 ? "#ffd23f" : mixColor("#7ec8e3", "#334", 0);
+    cx.fillRect(-18, -34, 14, 14);
+    cx.fillRect(6, -34, 14, 14);
+  } else { // windmill
+    cx.fillStyle = mixColor("#eeeeee", "#777788", nightT);
+    cx.beginPath();
+    cx.moveTo(-8, 0); cx.lineTo(-4, -70); cx.lineTo(4, -70); cx.lineTo(8, 0);
+    cx.fill();
+    cx.save();
+    cx.translate(0, -70);
+    cx.rotate(now / 900);
+    cx.fillStyle = mixColor("#ffffff", "#8888aa", nightT);
+    for (let i = 0; i < 3; i++) {
+      cx.rotate(Math.PI * 2 / 3);
+      cx.fillRect(-3, -44, 6, 44);
+    }
+    cx.restore();
+  }
+  cx.restore();
+}
+
+/* ============ game loop ============ */
+const needle = document.getElementById("needle");
+const speedNum = document.getElementById("speedNum");
+let last = performance.now();
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  // physics
+  const max = S.turbo ? MAXSPEED : 80;
+  const canDrive = S.engineOn && !S.handbrake && (S.gear === "D" || S.gear === "R");
+  const gearMax = S.gear === "R" ? 25 : max;
+
+  if (canDrive && S.gas) {
+    S.speed = Math.min(gearMax, S.speed + dt * (S.turbo ? 55 : 30));
+  } else {
+    S.speed = Math.max(0, S.speed - dt * (S.brake || S.handbrake ? 90 : 12));
+  }
+  if (!S.engineOn || S.gear === "P" || S.gear === "N") {
+    S.speed = Math.max(0, S.speed - dt * 40);
+  }
+
+  S.distance += S.speed * dt * (S.gear === "R" ? -1 : 1);
+
+  // drift on road when steering
+  S.carX += S.curve * S.speed * dt * 0.004;
+  S.carX = Math.max(-1.5, Math.min(1.5, S.carX));
+  if (S.speed < 1) S.carX = lerp(S.carX, 0, dt);
+  // gently pull car & curve back
+  if (!wheelDrag && S.speed > 2) {
+    S.wheelAngle = lerp(S.wheelAngle, 0, dt * 1.2);
+    S.carX = lerp(S.carX, 0, dt * 0.5);
+  }
+
+  // engine sound pitch
+  if (engineOsc) {
+    engineOsc.frequency.value = 55 + S.speed * 1.6 + (S.gas && canDrive ? 20 : 0);
+    engineFilter.frequency.value = 300 + S.speed * 8;
+  }
+
+  // wheel visual
+  wheel.style.transform = `rotate(${S.wheelAngle}deg)`;
+
+  // gauge: -110deg at 0, +110deg at MAXSPEED
+  const nAng = -110 + (S.speed / MAXSPEED) * 220;
+  needle.style.transform = `translateX(-50%) rotate(${nAng}deg)`;
+  speedNum.textContent = Math.round(S.speed);
+
+  drawWorld(dt, now);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* resume audio on first interaction (browser autoplay policy) */
+addEventListener("pointerdown", () => audio(), { once: true });
+</script>
+</body>
+</html>
